@@ -1,0 +1,2 @@
+[requires]
+flysight/0.0.1
