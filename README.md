@@ -70,3 +70,25 @@ INCLUDEPATH += /home/$USER/Qt/5.5/gcc_64/include
 INCLUDEPATH += /home/$USER/Qt/5.5/gcc_64/include/QtCore
 ```
 3. Run `make` again.
+
+## Working ##
+
+```
+akenny@akenny-laptop:/tmp/flysight-viewer-qt/src$ cat ~/.conan/profiles/default
+[settings]
+os=Linux
+os_build=Linux
+arch=x86_64
+arch_build=x86_64
+compiler=gcc
+compiler.version=10
+compiler.libcxx=libstdc++
+build_type=Release
+[options]
+[build_requires]
+[env]
+```
+
+```
+conan install --build=missing -s compiler.version=10 -s compiler.cppstd=20 -s compiler.libcxx=libstdc++11 -g qmake .
+```

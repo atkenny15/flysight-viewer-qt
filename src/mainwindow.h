@@ -34,6 +34,7 @@
 #include <QSqlDatabase>
 #include <QStack>
 #include <QVector>
+#include <flysight/track.hh>
 
 class MapView;
 class QCPRange;
