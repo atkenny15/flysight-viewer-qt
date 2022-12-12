@@ -27,29 +27,28 @@
 #include <QWidget>
 
 namespace Ui {
-    class AcroForm;
+class AcroForm;
 }
 
 class MainWindow;
 
-class AcroForm : public QWidget
-{
+class AcroForm : public QWidget {
     Q_OBJECT
 
 public:
-    explicit AcroForm(QWidget *parent = 0);
+    explicit AcroForm(QWidget* parent = 0);
     ~AcroForm();
 
     virtual QSize sizeHint() const;
 
-    void setMainWindow(MainWindow *mainWindow);
+    void setMainWindow(MainWindow* mainWindow);
 
 protected:
-    virtual void keyPressEvent(QKeyEvent *);
+    virtual void keyPressEvent(QKeyEvent*);
 
 private:
-    Ui::AcroForm *ui;
-    MainWindow  *mMainWindow;
+    Ui::AcroForm* ui;
+    MainWindow* mMainWindow;
 
 public slots:
     void updateView();
@@ -58,6 +57,5 @@ private slots:
     void onFAIButtonClicked();
     void onApplyButtonClicked();
 };
-
 
 #endif // ACROFORM_H

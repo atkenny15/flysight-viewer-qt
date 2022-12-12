@@ -32,24 +32,23 @@ class WideOpenSpeedForm;
 
 class MainWindow;
 
-class WideOpenSpeedForm : public QWidget
-{
+class WideOpenSpeedForm : public QWidget {
     Q_OBJECT
 
 public:
-    explicit WideOpenSpeedForm(QWidget *parent = 0);
+    explicit WideOpenSpeedForm(QWidget* parent = 0);
     ~WideOpenSpeedForm();
 
     virtual QSize sizeHint() const;
 
-    void setMainWindow(MainWindow *mainWindow);
+    void setMainWindow(MainWindow* mainWindow);
 
 protected:
-    virtual void keyPressEvent(QKeyEvent *);
+    virtual void keyPressEvent(QKeyEvent*);
 
 private:
-    Ui::WideOpenSpeedForm *ui;
-    MainWindow  *mMainWindow;
+    Ui::WideOpenSpeedForm* ui;
+    MainWindow* mMainWindow;
 
 public slots:
     void updateView();

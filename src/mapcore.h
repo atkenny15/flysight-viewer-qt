@@ -24,28 +24,23 @@
 #ifndef MAPCORE_H
 #define MAPCORE_H
 
+#include "mapview.h"
 #include <QList>
 #include <QMap>
 #include <QMessageBox>
 #include <QObject>
 #include <QVariant>
 
-#include "mapview.h"
-
 /*
-    An instance of this class gets published over the WebChannel and is then accessible to HTML clients.
+    An instance of this class gets published over the WebChannel and is then accessible to HTML
+   clients.
 */
 
-class MapCore : public QObject
-{
+class MapCore : public QObject {
     Q_OBJECT
 
 public:
-    MapCore(MapView *mapView, QObject *parent = nullptr)
-        : QObject(parent), mMapView(mapView)
-    {
-
-    }
+    MapCore(MapView* mapView, QObject* parent = nullptr) : QObject(parent), mMapView(mapView) {}
 
 signals:
     void setData(QList<QVariant> data);
@@ -65,42 +60,20 @@ signals:
     void disableDrag();
 
 public slots:
-    void message(const QString &text)
-    {
-        QMessageBox::information(
-                    mMapView,
-                    tr("Message"),
-                    text);
-    }
+    void message(const QString& text) { QMessageBox::information(mMapView, tr("Message"), text); }
 
-    void mouseDown(QMap<QString, QVariant> latLng)
-    {
-        mMapView->mouseDown(latLng);
-    }
-    void mouseUp(QMap<QString, QVariant> latLng)
-    {
-        mMapView->mouseUp(latLng);
-    }
-    void mouseOver(QMap<QString, QVariant> latLng)
-    {
-        mMapView->mouseOver(latLng);
-    }
-    void mouseOut()
-    {
-        mMapView->mouseOut();
-    }
-    void mouseMove(QMap<QString, QVariant> latLng)
-    {
-        mMapView->mouseMove(latLng);
-    }
+    void mouseDown(QMap<QString, QVariant> latLng) { mMapView->mouseDown(latLng); }
+    void mouseUp(QMap<QString, QVariant> latLng) { mMapView->mouseUp(latLng); }
+    void mouseOver(QMap<QString, QVariant> latLng) { mMapView->mouseOver(latLng); }
+    void mouseOut() { mMapView->mouseOut(); }
+    void mouseMove(QMap<QString, QVariant> latLng) { mMapView->mouseMove(latLng); }
 
-    void boundsChanged(QMap<QString, QVariant> sw, QMap<QString, QVariant> ne)
-    {
+    void boundsChanged(QMap<QString, QVariant> sw, QMap<QString, QVariant> ne) {
         mMapView->boundsChanged(sw, ne);
     }
 
 private:
-    MapView *mMapView;
+    MapView* mMapView;
 };
 
 #endif // MAPCORE_H

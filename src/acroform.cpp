@@ -22,21 +22,17 @@
 ****************************************************************************/
 
 #include "acroform.h"
-#include "ui_acroform.h"
 
+#include "acroscoring.h"
 #include "common.h"
 #include "datapoint.h"
 #include "mainwindow.h"
 #include "plotvalue.h"
-#include "acroscoring.h"
+#include "ui_acroform.h"
 
 #define METERS_TO_FEET 3.280839895
 
-AcroForm::AcroForm(QWidget *parent) :
-    QWidget(parent),
-    ui(new Ui::AcroForm),
-    mMainWindow(0)
-{
+AcroForm::AcroForm(QWidget* parent) : QWidget(parent), ui(new Ui::AcroForm), mMainWindow(0) {
     ui->setupUi(this);
 
     connect(ui->faiButton, SIGNAL(clicked()), this, SLOT(onFAIButtonClicked()));
@@ -45,28 +41,24 @@ AcroForm::AcroForm(QWidget *parent) :
     connect(ui->altitudeEdit, SIGNAL(editingFinished()), this, SLOT(onApplyButtonClicked()));
 }
 
-AcroForm::~AcroForm()
-{
+AcroForm::~AcroForm() {
     delete ui;
 }
 
-QSize AcroForm::sizeHint() const
-{
+QSize AcroForm::sizeHint() const {
     // Keeps windows from being initialized as very short
     return QSize(175, 175);
 }
 
-void AcroForm::setMainWindow(
-        MainWindow *mainWindow)
-{
+void AcroForm::setMainWindow(MainWindow* mainWindow) {
     mMainWindow = mainWindow;
 }
 
-void AcroForm::updateView()
-{
-    if (mMainWindow->dataSize() == 0) return;
+void AcroForm::updateView() {
+    if (mMainWindow->dataSize() == 0)
+        return;
 
-    AcroScoring *method = (AcroScoring *) mMainWindow->scoringMethod(MainWindow::Acro);
+    AcroScoring* method = (AcroScoring*)mMainWindow->scoringMethod(MainWindow::Acro);
 
     const double speed = method->speed();
     const double altitude = method->altitude();
@@ -78,48 +70,41 @@ void AcroForm::updateView()
     DataPoint dpBottom, dpTop;
     bool success = false;
 
-    switch (mMainWindow->windowMode())
-    {
-    case MainWindow::Actual:
-        success = method->getWindowBounds(mMainWindow->data(), dpBottom, dpTop);
-        break;
+    switch (mMainWindow->windowMode()) {
+        case MainWindow::Actual:
+            success = method->getWindowBounds(mMainWindow->data(), dpBottom, dpTop);
+            break;
     }
 
-    if (success)
-    {
+    if (success) {
         // Update display
         ui->timeEdit->setText(QString("%1").arg(dpBottom.t - dpTop.t, 0, 'f', 1));
     }
-    else
-    {
+    else {
         // Update display
         ui->timeEdit->setText(tr("n/a"));
     }
 }
 
-void AcroForm::onFAIButtonClicked()
-{
-    AcroScoring *method = (AcroScoring *) mMainWindow->scoringMethod(MainWindow::Acro);
+void AcroForm::onFAIButtonClicked() {
+    AcroScoring* method = (AcroScoring*)mMainWindow->scoringMethod(MainWindow::Acro);
     method->setSpeed(8);
     method->setAltitude(2286);
 }
 
-void AcroForm::onApplyButtonClicked()
-{
+void AcroForm::onApplyButtonClicked() {
     double speed = ui->speedEdit->text().toDouble();
     double altitude = ui->altitudeEdit->text().toDouble() / METERS_TO_FEET;
 
-    AcroScoring *method = (AcroScoring *) mMainWindow->scoringMethod(MainWindow::Acro);
+    AcroScoring* method = (AcroScoring*)mMainWindow->scoringMethod(MainWindow::Acro);
     method->setSpeed(speed);
     method->setAltitude(altitude);
 
     mMainWindow->setFocus();
 }
 
-void AcroForm::keyPressEvent(QKeyEvent *event)
-{
-    if (event->key() == Qt::Key_Escape)
-    {
+void AcroForm::keyPressEvent(QKeyEvent* event) {
+    if (event->key() == Qt::Key_Escape) {
         // Reset window bounds
         updateView();
 

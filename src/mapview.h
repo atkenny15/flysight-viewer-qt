@@ -31,28 +31,27 @@ class MainWindow;
 class QWebChannel;
 class MapCore;
 
-class MapView : public QWebEngineView
-{
+class MapView : public QWebEngineView {
     Q_OBJECT
 public:
-    explicit MapView(QWidget *parent = 0);
+    explicit MapView(QWidget* parent = 0);
 
     virtual QSize sizeHint() const;
 
-    void setMainWindow(MainWindow *mainWindow) { mMainWindow = mainWindow; }
+    void setMainWindow(MainWindow* mainWindow) { mMainWindow = mainWindow; }
 
     double metersPerPixel() const;
-    MapCore *mapCore() { return mMapCore; }
+    MapCore* mapCore() { return mMapCore; }
 
 private:
-    MainWindow  *mMainWindow;
-    bool        mDragging;
+    MainWindow* mMainWindow;
+    bool mDragging;
 
-    QWebChannel *mWebChannel;
-    MapCore     *mMapCore;
+    QWebChannel* mWebChannel;
+    MapCore* mMapCore;
 
-    double       mLatMin, mLonMin;
-    double       mLatMax, mLonMax;
+    double mLatMin, mLonMin;
+    double mLatMax, mLonMax;
 
     bool updateReference(QMap<QString, QVariant> latLng);
     void updateMarker(QMap<QString, QVariant> latLng);

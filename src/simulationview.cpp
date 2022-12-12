@@ -1,28 +1,21 @@
 #include "simulationview.h"
-#include "ui_simulationview.h"
 
+#include "mainwindow.h"
+#include "ui_simulationview.h"
 #include <QFile>
 #include <QFileDialog>
 #include <QFileInfo>
 #include <QSettings>
 #include <QTextStream>
-
 #include <VLCQtCore/Common.h>
 #include <VLCQtCore/Instance.h>
 #include <VLCQtCore/Media.h>
 #include <VLCQtCore/MediaPlayer.h>
 
-#include "mainwindow.h"
-
 #define POSITION_DIV 10
 
-SimulationView::SimulationView(QWidget *parent) :
-    QWidget(parent),
-    ui(new Ui::SimulationView),
-    mMainWindow(0),
-    mMedia(0),
-    mBusy(false)
-{
+SimulationView::SimulationView(QWidget* parent) :
+    QWidget(parent), ui(new Ui::SimulationView), mMainWindow(0), mMedia(0), mBusy(false) {
     ui->setupUi(this);
 
     // Initialize file names
@@ -76,8 +69,7 @@ SimulationView::SimulationView(QWidget *parent) :
     ui->outputFileName->setText(mAudioFile->fileName());
 }
 
-SimulationView::~SimulationView()
-{
+SimulationView::~SimulationView() {
     delete mPlayer;
     delete mMedia;
     delete mInstance;
@@ -85,27 +77,20 @@ SimulationView::~SimulationView()
     delete ui;
 }
 
-QSize SimulationView::sizeHint() const
-{
+QSize SimulationView::sizeHint() const {
     // Keeps windows from being initialized as very short
     return QSize(400, 139);
 }
 
-void SimulationView::setMainWindow(
-        MainWindow *mainWindow)
-{
+void SimulationView::setMainWindow(MainWindow* mainWindow) {
     mMainWindow = mainWindow;
 }
 
-void SimulationView::showEvent(
-        QShowEvent *event)
-{
+void SimulationView::showEvent(QShowEvent* event) {
     mMainWindow->mediaCursorAddRef(this);
 }
 
-void SimulationView::hideEvent(
-        QHideEvent *event)
-{
+void SimulationView::hideEvent(QHideEvent* event) {
     mBusy = true;
 
     pauseMedia();
@@ -114,8 +99,7 @@ void SimulationView::hideEvent(
     mBusy = false;
 }
 
-void SimulationView::on_rootBrowseButton_clicked()
-{
+void SimulationView::on_rootBrowseButton_clicked() {
     // Initialize settings object
     QSettings settings("FlySight", "Viewer");
 
@@ -123,8 +107,7 @@ void SimulationView::on_rootBrowseButton_clicked()
     QString settingsPath = settings.value("rootConfig").toString();
     QString fileName = QFileDialog::getOpenFileName(this, tr("Open configuration"), settingsPath);
 
-    if (!fileName.isEmpty())
-    {
+    if (!fileName.isEmpty()) {
         // Update file name
         ui->rootFileName->setText(fileName);
 
@@ -133,8 +116,7 @@ void SimulationView::on_rootBrowseButton_clicked()
     }
 }
 
-void SimulationView::on_selectedBrowseButton_clicked()
-{
+void SimulationView::on_selectedBrowseButton_clicked() {
     // Initialize settings object
     QSettings settings("FlySight", "Viewer");
 
@@ -142,8 +124,7 @@ void SimulationView::on_selectedBrowseButton_clicked()
     QString settingsPath = settings.value("selectedConfig").toString();
     QString fileName = QFileDialog::getOpenFileName(this, tr("Open configuration"), settingsPath);
 
-    if (!fileName.isEmpty())
-    {
+    if (!fileName.isEmpty()) {
         // Update file name
         ui->selectedFileName->setText(fileName);
 
@@ -152,17 +133,16 @@ void SimulationView::on_selectedBrowseButton_clicked()
     }
 }
 
-void SimulationView::on_audioBrowseButton_clicked()
-{
+void SimulationView::on_audioBrowseButton_clicked() {
     // Initialize settings object
     QSettings settings("FlySight", "Viewer");
 
     // Get audio folder name
     QString settingsPath = settings.value("audioFolder").toString();
-    QString dirName = QFileDialog::getExistingDirectory(this, tr("Open audio folder"), settingsPath);
+    QString dirName =
+        QFileDialog::getExistingDirectory(this, tr("Open audio folder"), settingsPath);
 
-    if (!dirName.isEmpty())
-    {
+    if (!dirName.isEmpty()) {
         // Update file name
         ui->audioFolderName->setText(dirName);
 
@@ -171,8 +151,7 @@ void SimulationView::on_audioBrowseButton_clicked()
     }
 }
 
-void SimulationView::on_selectedCheckBox_stateChanged(int state)
-{
+void SimulationView::on_selectedCheckBox_stateChanged(int state) {
     const bool checked = state == Qt::Checked;
 
     ui->selectedFileName->setEnabled(checked);
@@ -182,8 +161,7 @@ void SimulationView::on_selectedCheckBox_stateChanged(int state)
     settings.setValue("useSelectedConfig", checked);
 }
 
-void SimulationView::on_audioCheckBox_stateChanged(int state)
-{
+void SimulationView::on_audioCheckBox_stateChanged(int state) {
     const bool checked = state == Qt::Checked;
     ui->audioFolderName->setEnabled(checked);
     ui->audioBrowseButton->setEnabled(checked);
@@ -192,26 +170,23 @@ void SimulationView::on_audioCheckBox_stateChanged(int state)
     settings.setValue("useAudioFolder", checked);
 }
 
-void SimulationView::on_processButton_clicked()
-{
+void SimulationView::on_processButton_clicked() {
     Config config;
-    Tone   tone(config);
-    UBX    ubx(config, tone);
+    Tone tone(config);
+    UBX ubx(config, tone);
 
     // Read root configuration
     QString fileName = ui->rootFileName->text();
     config.readSingle(fileName);
 
     // Read selected configuration
-    if (ui->selectedCheckBox->isChecked())
-    {
+    if (ui->selectedCheckBox->isChecked()) {
         QString fileName = ui->selectedFileName->text();
         config.readSingle(fileName);
     }
 
     // Copy audio folder name
-    if (ui->audioCheckBox->isChecked())
-    {
+    if (ui->audioCheckBox->isChecked()) {
         config.mAudioFolder = ui->audioFolderName->text();
     }
 
@@ -219,16 +194,16 @@ void SimulationView::on_processButton_clicked()
     config.mRootConfig = ui->rootFileName->text();
 
     // Copy selected configuration name
-    if (ui->selectedCheckBox->isChecked())
-    {
+    if (ui->selectedCheckBox->isChecked()) {
         config.mConfigFolder = QFileInfo(ui->selectedFileName->text()).absolutePath();
     }
 
     // Return now if there's no data
-    if (mMainWindow->dataSize() == 0) return;
+    if (mMainWindow->dataSize() == 0)
+        return;
 
-    const DataPoint &dpStart = mMainWindow->dataPoint(0);
-    const DataPoint &dpEnd = mMainWindow->dataPoint(mMainWindow->dataSize() - 1);
+    const DataPoint& dpStart = mMainWindow->dataPoint(0);
+    const DataPoint& dpEnd = mMainWindow->dataPoint(mMainWindow->dataSize() - 1);
     const qint64 numSamples = dpStart.dateTime.msecsTo(dpEnd.dateTime) * 8000 / 256;
 
     // Initialize progress bar
@@ -243,8 +218,7 @@ void SimulationView::on_processButton_clicked()
     mAudioFile->open();
     mAudioFile->resize(0);
 
-    const unsigned char header[] =
-    {
+    const unsigned char header[] = {
         0x52, 0x49, 0x46, 0x46, // ChunkID = "RIFF"
         0x1C, 0x0B, 0x00, 0x00, // ChunkSize
         0x57, 0x41, 0x56, 0x45, // Format = "WAVE"
@@ -259,28 +233,25 @@ void SimulationView::on_processButton_clicked()
         0x64, 0x61, 0x74, 0x61  // Subchunk2ID = "data"
     };
 
-    mAudioFile->write((const char *) header, 40);
+    mAudioFile->write((const char*)header, 40);
 
-    uint32_t numSamples32 = (uint32_t) numSamples;
-    mAudioFile->write((char *) &numSamples32, 4);
+    uint32_t numSamples32 = (uint32_t)numSamples;
+    mAudioFile->write((char*)&numSamples32, 4);
 
-    for (qint64 s = 0; s < numSamples; ++s)
-    {
+    for (qint64 s = 0; s < numSamples; ++s) {
         qint64 ms = s * 256 / 8000;
 
         uint8_t sample = tone.sample();
-        mAudioFile->write((char *) &sample, 1);
+        mAudioFile->write((char*)&sample, 1);
 
-        if (ms >= msNextSample)
-        {
+        if (ms >= msNextSample) {
             ubx.receiveMessage(dpNext);
 
             dpNext = mMainWindow->dataPoint(++iNextSample);
             msNextSample = dpStart.dateTime.msecsTo(dpNext.dateTime);
         }
 
-        if (ms >= msNextTick)
-        {
+        if (ms >= msNextTick) {
             tone.update();
 
             ubx.task();
@@ -298,8 +269,7 @@ void SimulationView::on_processButton_clicked()
     setMedia(mAudioFile->fileName());
 }
 
-void SimulationView::setMedia(const QString &fileName)
-{
+void SimulationView::setMedia(const QString& fileName) {
     // Set media
     delete mMedia;
     mMedia = new VlcMedia(fileName, true, mInstance);
@@ -311,35 +281,30 @@ void SimulationView::setMedia(const QString &fileName)
     ui->scrubDial->setEnabled(true);
 }
 
-void SimulationView::play()
-{
-    switch(mPlayer->state())
-    {
-    case Vlc::Playing:
-        mPlayer->pause();
-        break;
-    default:
-        mMainWindow->pauseMedia();
-        mPlayer->play();
-        break;
+void SimulationView::play() {
+    switch (mPlayer->state()) {
+        case Vlc::Playing:
+            mPlayer->pause();
+            break;
+        default:
+            mMainWindow->pauseMedia();
+            mPlayer->play();
+            break;
     }
 }
 
-void SimulationView::stateChanged()
-{
-    switch(mPlayer->state())
-    {
-    case Vlc::Playing:
-        ui->playButton->setIcon(style()->standardIcon(QStyle::SP_MediaPause));
-        break;
-    default:
-        ui->playButton->setIcon(style()->standardIcon(QStyle::SP_MediaPlay));
-        break;
+void SimulationView::stateChanged() {
+    switch (mPlayer->state()) {
+        case Vlc::Playing:
+            ui->playButton->setIcon(style()->standardIcon(QStyle::SP_MediaPause));
+            break;
+        default:
+            ui->playButton->setIcon(style()->standardIcon(QStyle::SP_MediaPlay));
+            break;
     }
 }
 
-void SimulationView::timeChanged(int position)
-{
+void SimulationView::timeChanged(int position) {
     mBusy = true;
 
     // Update controls
@@ -347,11 +312,10 @@ void SimulationView::timeChanged(int position)
     ui->scrubDial->setValue(position % 1000);
 
     // Update text label
-    double time = (double) position / 1000;
+    double time = (double)position / 1000;
 
-    if (mMainWindow->dataSize() > 0)
-    {
-        const DataPoint &dp0 = mMainWindow->data()[0];
+    if (mMainWindow->dataSize() > 0) {
+        const DataPoint& dp0 = mMainWindow->data()[0];
         time += dp0.t;
     }
 
@@ -363,30 +327,27 @@ void SimulationView::timeChanged(int position)
     mBusy = false;
 }
 
-void SimulationView::lengthChanged(int duration)
-{
+void SimulationView::lengthChanged(int duration) {
     ui->positionSlider->setRange(0, duration / POSITION_DIV);
 }
 
-void SimulationView::setPosition(int position)
-{
-    if (!mBusy)
-    {
+void SimulationView::setPosition(int position) {
+    if (!mBusy) {
         // Update video position
         mPlayer->setTime(position * POSITION_DIV);
         timeChanged(position * POSITION_DIV);
     }
 }
 
-void SimulationView::setScrubPosition(int position)
-{
-    if (!mBusy)
-    {
+void SimulationView::setScrubPosition(int position) {
+    if (!mBusy) {
         int oldPosition = mPlayer->time();
         int newPosition = oldPosition - oldPosition % 1000 + position;
 
-        while (newPosition <= oldPosition - 500) newPosition += 1000;
-        while (newPosition >  oldPosition + 500) newPosition -= 1000;
+        while (newPosition <= oldPosition - 500)
+            newPosition += 1000;
+        while (newPosition > oldPosition + 500)
+            newPosition -= 1000;
 
         // Update video position
         mPlayer->setTime(newPosition);
@@ -394,28 +355,27 @@ void SimulationView::setScrubPosition(int position)
     }
 }
 
-void SimulationView::updateView()
-{
-    if (mMainWindow->dataSize() == 0) return;
-    if (mBusy) return;
+void SimulationView::updateView() {
+    if (mMainWindow->dataSize() == 0)
+        return;
+    if (mBusy)
+        return;
 
     // Get media cursor
-    const DataPoint &dp = mMainWindow->interpolateDataT(mMainWindow->mediaCursor());
-    const DataPoint &dp0 = mMainWindow->data()[0];
+    const DataPoint& dp = mMainWindow->interpolateDataT(mMainWindow->mediaCursor());
+    const DataPoint& dp0 = mMainWindow->data()[0];
 
     // Get playback position
     int position = (dp.t - dp0.t) * 1000;
 
     // If playback position is within video bounds
-    if (0 <= position && position <= mPlayer->length())
-    {
+    if (0 <= position && position <= mPlayer->length()) {
         // Update video position
         mPlayer->setTime(position);
         timeChanged(position);
     }
 }
 
-void SimulationView::pauseMedia()
-{
+void SimulationView::pauseMedia() {
     mPlayer->pause();
 }

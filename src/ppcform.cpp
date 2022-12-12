@@ -22,7 +22,6 @@
 ****************************************************************************/
 
 #include "ppcform.h"
-#include "ui_ppcform.h"
 
 #include "common.h"
 #include "dataplot.h"
@@ -31,12 +30,9 @@
 #include "plotvalue.h"
 #include "ppcscoring.h"
 #include "ppcupload.h"
+#include "ui_ppcform.h"
 
-PPCForm::PPCForm(QWidget *parent) :
-    QWidget(parent),
-    ui(new Ui::PPCForm),
-    mMainWindow(0)
-{
+PPCForm::PPCForm(QWidget* parent) : QWidget(parent), ui(new Ui::PPCForm), mMainWindow(0) {
     ui->setupUi(this);
 
     connect(ui->faiButton, SIGNAL(clicked()), this, SLOT(onFAIButtonClicked()));
@@ -66,30 +62,25 @@ PPCForm::PPCForm(QWidget *parent) :
     connect(ui->ppcButton, SIGNAL(clicked()), this, SLOT(onPpcButtonClicked()));
 }
 
-PPCForm::~PPCForm()
-{
+PPCForm::~PPCForm() {
     delete ui;
 }
 
-QSize PPCForm::sizeHint() const
-{
+QSize PPCForm::sizeHint() const {
     // Keeps windows from being initialized as very short
     return QSize(175, 175);
 }
 
-void PPCForm::setMainWindow(
-        MainWindow *mainWindow)
-{
+void PPCForm::setMainWindow(MainWindow* mainWindow) {
     mMainWindow = mainWindow;
 }
 
-void PPCForm::updateView()
-{
+void PPCForm::updateView() {
     // Update mode selection
     ui->actualButton->setChecked(mMainWindow->windowMode() == MainWindow::Actual);
     ui->optimalButton->setChecked(mMainWindow->windowMode() == MainWindow::Optimal);
 
-    PPCScoring *method = (PPCScoring *) mMainWindow->scoringMethod(MainWindow::PPC);
+    PPCScoring* method = (PPCScoring*)mMainWindow->scoringMethod(MainWindow::PPC);
 
     const double bottom = method->windowBottom();
     const double top = method->windowTop();
@@ -101,34 +92,30 @@ void PPCForm::updateView()
     DataPoint dpBottom, dpTop;
     bool success;
 
-    switch (mMainWindow->windowMode())
-    {
-    case MainWindow::Actual:
-        success = method->getWindowBounds(mMainWindow->data(), dpBottom, dpTop);
-        break;
-    case MainWindow::Optimal:
-        success = method->getWindowBounds(mMainWindow->optimal(), dpBottom, dpTop);
-        break;
+    switch (mMainWindow->windowMode()) {
+        case MainWindow::Actual:
+            success = method->getWindowBounds(mMainWindow->data(), dpBottom, dpTop);
+            break;
+        case MainWindow::Optimal:
+            success = method->getWindowBounds(mMainWindow->optimal(), dpBottom, dpTop);
+            break;
     }
 
-    if (success)
-    {
+    if (success) {
         // Calculate results
         const double time = dpBottom.t - dpTop.t;
         const double distance = mMainWindow->getDistance(dpTop, dpBottom);
         const double horizontalSpeed = distance / time;
 
         // Update display
-        if (mMainWindow->units() == PlotValue::Metric)
-        {
+        if (mMainWindow->units() == PlotValue::Metric) {
             ui->timeEdit->setText(QString("%1").arg(time));
             ui->distanceEdit->setText(QString("%1").arg(distance / 1000));
             ui->distanceUnits->setText(tr("km"));
             ui->horizontalSpeedEdit->setText(QString("%1").arg(horizontalSpeed * MPS_TO_KMH));
             ui->horizontalSpeedUnits->setText(tr("km/h"));
         }
-        else
-        {
+        else {
             ui->timeEdit->setText(QString("%1").arg(time));
             ui->distanceEdit->setText(QString("%1").arg(distance * METERS_TO_FEET / 5280));
             ui->distanceUnits->setText(tr("mi"));
@@ -139,16 +126,13 @@ void PPCForm::updateView()
         ui->optimizeButton->setEnabled(true);
         ui->ppcButton->setEnabled(true);
     }
-    else
-    {
+    else {
         // Update display
-        if (mMainWindow->units() == PlotValue::Metric)
-        {
+        if (mMainWindow->units() == PlotValue::Metric) {
             ui->distanceUnits->setText(tr("km"));
             ui->horizontalSpeedUnits->setText(tr("km/h"));
         }
-        else
-        {
+        else {
             ui->distanceUnits->setText(tr("mi"));
             ui->horizontalSpeedUnits->setText(tr("mph"));
         }
@@ -183,14 +167,12 @@ void PPCForm::updateView()
     ui->endGlobeButton->setEnabled(drawLane);
 }
 
-void PPCForm::onFAIButtonClicked()
-{
-    PPCScoring *method = (PPCScoring *) mMainWindow->scoringMethod(MainWindow::PPC);
+void PPCForm::onFAIButtonClicked() {
+    PPCScoring* method = (PPCScoring*)mMainWindow->scoringMethod(MainWindow::PPC);
     method->setWindow(1500, 2500);
 }
 
-void PPCForm::onApplyButtonClicked()
-{
+void PPCForm::onApplyButtonClicked() {
     double bottom = ui->bottomEdit->text().toDouble();
     double top = ui->topEdit->text().toDouble();
 
@@ -198,7 +180,7 @@ void PPCForm::onApplyButtonClicked()
     const double endLatitude = ui->endLatitudeEdit->text().toDouble();
     const double endLongitude = ui->endLongitudeEdit->text().toDouble();
 
-    PPCScoring *method = (PPCScoring *) mMainWindow->scoringMethod(MainWindow::PPC);
+    PPCScoring* method = (PPCScoring*)mMainWindow->scoringMethod(MainWindow::PPC);
     method->setWindow(bottom, top);
     method->setDrawLane(drawLane);
     method->setEnd(endLatitude, endLongitude);
@@ -206,28 +188,23 @@ void PPCForm::onApplyButtonClicked()
     mMainWindow->setFocus();
 }
 
-void PPCForm::onUpButtonClicked()
-{
-    PPCScoring *method = (PPCScoring *) mMainWindow->scoringMethod(MainWindow::PPC);
+void PPCForm::onUpButtonClicked() {
+    PPCScoring* method = (PPCScoring*)mMainWindow->scoringMethod(MainWindow::PPC);
     method->setWindow(method->windowBottom() + 10, method->windowTop() + 10);
 }
 
-void PPCForm::onDownButtonClicked()
-{
-    PPCScoring *method = (PPCScoring *) mMainWindow->scoringMethod(MainWindow::PPC);
+void PPCForm::onDownButtonClicked() {
+    PPCScoring* method = (PPCScoring*)mMainWindow->scoringMethod(MainWindow::PPC);
     method->setWindow(method->windowBottom() - 10, method->windowTop() - 10);
 }
 
-void PPCForm::onEndButtonClicked()
-{
+void PPCForm::onEndButtonClicked() {
     mMainWindow->setMapMode(MainWindow::SetEnd);
     setFocus();
 }
 
-void PPCForm::keyPressEvent(QKeyEvent *event)
-{
-    if (event->key() == Qt::Key_Escape)
-    {
+void PPCForm::keyPressEvent(QKeyEvent* event) {
+    if (event->key() == Qt::Key_Escape) {
         // Cancel map selection
         mMainWindow->setMapMode(MainWindow::Default);
 
@@ -238,28 +215,27 @@ void PPCForm::keyPressEvent(QKeyEvent *event)
     QWidget::keyPressEvent(event);
 }
 
-void PPCForm::onModeChanged()
-{
-    PPCScoring *method = (PPCScoring *) mMainWindow->scoringMethod(MainWindow::PPC);
+void PPCForm::onModeChanged() {
+    PPCScoring* method = (PPCScoring*)mMainWindow->scoringMethod(MainWindow::PPC);
 
-    if (ui->timeButton->isChecked())          method->setMode(PPCScoring::Time);
-    else if (ui->distanceButton->isChecked()) method->setMode(PPCScoring::Distance);
-    else                                      method->setMode(PPCScoring::Speed);
+    if (ui->timeButton->isChecked())
+        method->setMode(PPCScoring::Time);
+    else if (ui->distanceButton->isChecked())
+        method->setMode(PPCScoring::Distance);
+    else
+        method->setMode(PPCScoring::Speed);
 }
 
-void PPCForm::onActualButtonClicked()
-{
+void PPCForm::onActualButtonClicked() {
     mMainWindow->setWindowMode(MainWindow::Actual);
 }
 
-void PPCForm::onOptimalButtonClicked()
-{
+void PPCForm::onOptimalButtonClicked() {
     mMainWindow->setWindowMode(MainWindow::Optimal);
 }
 
-void PPCForm::onOptimizeButtonClicked()
-{
-    PPCScoring *method = (PPCScoring *) mMainWindow->scoringMethod(MainWindow::PPC);
+void PPCForm::onOptimizeButtonClicked() {
+    PPCScoring* method = (PPCScoring*)mMainWindow->scoringMethod(MainWindow::PPC);
 
     // Perform optimization
     method->optimize();
@@ -273,10 +249,11 @@ void PPCForm::onOptimizeButtonClicked()
 void PPCForm::onPpcButtonClicked() {
 
     // Return if plot empty
-    if (mMainWindow->dataSize() == 0) return;
+    if (mMainWindow->dataSize() == 0)
+        return;
 
-    PPCUpload *uploader = new PPCUpload(mMainWindow);
-    PPCScoring *method = (PPCScoring *) mMainWindow->scoringMethod(MainWindow::PPC);
+    PPCUpload* uploader = new PPCUpload(mMainWindow);
+    PPCScoring* method = (PPCScoring*)mMainWindow->scoringMethod(MainWindow::PPC);
     DataPoint dpBottom, dpTop;
 
     ui->faiButton->click();
@@ -291,4 +268,3 @@ void PPCForm::onPpcButtonClicked() {
         uploader->upload("WS", windowTop, windowBottom, time, distance);
     }
 }
-

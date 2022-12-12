@@ -27,34 +27,31 @@
 #include <QDialog>
 
 namespace Ui {
-    class PlaybackView;
+class PlaybackView;
 }
 
 class MainWindow;
 class QTimer;
 
-class PlaybackView : public QWidget
-{
+class PlaybackView : public QWidget {
     Q_OBJECT
 
 public:
-    explicit PlaybackView(QWidget *parent = 0);
+    explicit PlaybackView(QWidget* parent = 0);
     ~PlaybackView();
 
     virtual QSize sizeHint() const;
 
-    void setMainWindow(MainWindow *mainWindow) { mMainWindow = mainWindow; }
+    void setMainWindow(MainWindow* mainWindow) { mMainWindow = mainWindow; }
 
 private:
-    enum {
-        Paused, Playing
-    } mState;
+    enum { Paused, Playing } mState;
 
-    Ui::PlaybackView *ui;
-    MainWindow       *mMainWindow;
+    Ui::PlaybackView* ui;
+    MainWindow* mMainWindow;
 
-    bool              mBusy;
-    QTimer           *mTimer;
+    bool mBusy;
+    QTimer* mTimer;
 
 public slots:
     void play();

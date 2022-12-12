@@ -28,10 +28,9 @@
 
 class MainWindow;
 
-class AcroScoring : public ScoringMethod
-{
+class AcroScoring : public ScoringMethod {
 public:
-    AcroScoring(MainWindow *mainWindow);
+    AcroScoring(MainWindow* mainWindow);
 
     double speed(void) const { return mSpeed; }
     void setSpeed(double speed);
@@ -39,19 +38,18 @@ public:
     double altitude(void) const { return mAltitude; }
     void setAltitude(double altitude);
 
-    void prepareDataPlot(DataPlot *plot);
+    void prepareDataPlot(DataPlot* plot);
 
-    bool getWindowBounds(const MainWindow::DataPoints &result,
-                         DataPoint &dpBottom, DataPoint &dpTop);
+    bool getWindowBounds(const MainWindow::DataPoints& result, DataPoint& dpBottom,
+                         DataPoint& dpTop);
 
 private:
-    MainWindow *mMainWindow;
+    MainWindow* mMainWindow;
 
-    double      mSpeed;
-    double      mAltitude;
+    double mSpeed;
+    double mAltitude;
 
-    int findIndexBelowT(const MainWindow::DataPoints &result,
-                        double t);
+    int findIndexBelowT(const MainWindow::DataPoints& result, double t);
 
 signals:
 

@@ -26,8 +26,7 @@
 
 #include <QObject>
 
-class ImportWorker : public QObject
-{
+class ImportWorker : public QObject {
     Q_OBJECT
 public:
     explicit ImportWorker();

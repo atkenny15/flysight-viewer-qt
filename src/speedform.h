@@ -27,31 +27,30 @@
 #include <QWidget>
 
 namespace Ui {
-    class SpeedForm;
+class SpeedForm;
 }
 
 class MainWindow;
 
-class SpeedForm : public QWidget
-{
+class SpeedForm : public QWidget {
     Q_OBJECT
 
 public:
-    explicit SpeedForm(QWidget *parent = 0);
+    explicit SpeedForm(QWidget* parent = 0);
     ~SpeedForm();
 
     virtual QSize sizeHint() const;
 
-    void setMainWindow(MainWindow *mainWindow);
+    void setMainWindow(MainWindow* mainWindow);
 
     QString scoreAsText(double score);
 
 protected:
-    virtual void keyPressEvent(QKeyEvent *);
+    virtual void keyPressEvent(QKeyEvent*);
 
 private:
-    Ui::SpeedForm *ui;
-    MainWindow  *mMainWindow;
+    Ui::SpeedForm* ui;
+    MainWindow* mMainWindow;
 
 public slots:
     void updateView();
@@ -66,6 +65,5 @@ private slots:
 
     void onPpcButtonClicked();
 };
-
 
 #endif // SPEEDFORM_H

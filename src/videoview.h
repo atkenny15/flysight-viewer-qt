@@ -27,7 +27,7 @@
 #include <QDialog>
 
 namespace Ui {
-    class VideoView;
+class VideoView;
 }
 
 class MainWindow;
@@ -36,33 +36,32 @@ class VlcInstance;
 class VlcMedia;
 class VlcMediaPlayer;
 
-class VideoView : public QWidget
-{
+class VideoView : public QWidget {
     Q_OBJECT
 
 public:
-    explicit VideoView(QWidget *parent = 0);
+    explicit VideoView(QWidget* parent = 0);
     ~VideoView();
 
     virtual QSize sizeHint() const;
 
-    void setMainWindow(MainWindow *mainWindow) { mMainWindow = mainWindow; }
-    void setMedia(const QString &fileName);
+    void setMainWindow(MainWindow* mainWindow) { mMainWindow = mainWindow; }
+    void setMedia(const QString& fileName);
 
 protected:
-    void showEvent(QShowEvent *event);
-    void hideEvent(QHideEvent *event);
+    void showEvent(QShowEvent* event);
+    void hideEvent(QHideEvent* event);
 
 private:
-    Ui::VideoView  *ui;
-    MainWindow     *mMainWindow;
+    Ui::VideoView* ui;
+    MainWindow* mMainWindow;
 
-    VlcInstance    *mInstance;
-    VlcMedia       *mMedia;
-    VlcMediaPlayer *mPlayer;
+    VlcInstance* mInstance;
+    VlcMedia* mMedia;
+    VlcMediaPlayer* mPlayer;
 
-    qint64          mZeroPosition;
-    bool            mBusy;
+    qint64 mZeroPosition;
+    bool mBusy;
 
 public slots:
     void play();

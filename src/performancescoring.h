@@ -28,22 +28,21 @@
 
 class MainWindow;
 
-class PerformanceScoring : public ScoringMethod
-{
+class PerformanceScoring : public ScoringMethod {
 public:
-    PerformanceScoring(MainWindow *mainWindow);
+    PerformanceScoring(MainWindow* mainWindow);
 
     double startTime(void) const { return mStartTime; }
     double endTime(void) const { return mEndTime; }
     void setRange(double startTime, double endTime);
 
-    void prepareDataPlot(DataPlot *plot);
+    void prepareDataPlot(DataPlot* plot);
 
 private:
-    MainWindow *mMainWindow;
+    MainWindow* mMainWindow;
 
-    double      mStartTime;
-    double      mEndTime;
+    double mStartTime;
+    double mEndTime;
 
 signals:
 

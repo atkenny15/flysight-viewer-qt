@@ -2,25 +2,23 @@
 #define TONE_H
 
 #include <QFile>
-
 #include <stdint.h>
 
-#define TONE_BUFFER_LEN    1024     // size of circular buffer
+#define TONE_BUFFER_LEN 1024 // size of circular buffer
 
-#define TONE_RATE_ONE_HZ   65
+#define TONE_RATE_ONE_HZ 65
 #define TONE_RATE_FLATLINE 0xffffU
 
 #define TONE_LENGTH_125_MS 3906
-#define TONE_MAX_PITCH     65280
+#define TONE_MAX_PITCH 65280
 
-#define TONE_CHIRP_MAX     (((uint32_t) 3242 << 16) / TONE_LENGTH_125_MS)
+#define TONE_CHIRP_MAX (((uint32_t)3242 << 16) / TONE_LENGTH_125_MS)
 
 class Config;
 
-class Tone
-{
+class Tone {
 public:
-    Tone(const Config &config);
+    Tone(const Config& config);
 
     uint8_t sample();
 
@@ -45,7 +43,7 @@ public:
     void release();
 
 private:
-    const Config &mConfig;
+    const Config& mConfig;
 
     uint16_t mRead;
     uint16_t mWrite;
@@ -54,28 +52,28 @@ private:
     uint32_t mChirp;
     uint16_t mLen;
 
-    uint8_t  mState;
-    uint8_t  mMode;
+    uint8_t mState;
+    uint8_t mMode;
 
-    QFile    mFile;
+    QFile mFile;
 
     uint16_t mNextIndex;
     uint32_t mNextChirp;
     uint16_t mRate;
 
-    uint8_t  mFlags;
-    uint8_t  mHold;
+    uint8_t mFlags;
+    uint8_t mHold;
 
     uint32_t mWavSamples;
 
     uint16_t mToneTimer;
     uint16_t mPhase;
-    uint8_t  mSampleCount;
+    uint8_t mSampleCount;
     uint16_t mSampleBegin, mSampleEnd, mSampleStep;
 
-    uint8_t  mBuffer[TONE_BUFFER_LEN];
+    uint8_t mBuffer[TONE_BUFFER_LEN];
 
-    bool     mSampleActive;
+    bool mSampleActive;
 
     void loadTable(void);
     void readFile(uint16_t size);

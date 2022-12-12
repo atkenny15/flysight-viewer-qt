@@ -28,10 +28,9 @@
 
 class MainWindow;
 
-class SpeedScoring : public ScoringMethod
-{
+class SpeedScoring : public ScoringMethod {
 public:
-    SpeedScoring(MainWindow *mainWindow);
+    SpeedScoring(MainWindow* mainWindow);
 
     double fromExit(void) const { return mFromExit; }
     void setFromExit(double fromExit);
@@ -42,26 +41,24 @@ public:
     double validationWindow(void) const { return mValidationWindow; }
     void setValidationWindow(double validationWindow);
 
-    double score(const MainWindow::DataPoints &result);
+    double score(const MainWindow::DataPoints& result);
     QString scoreAsText(double score);
 
-    void prepareDataPlot(DataPlot *plot);
+    void prepareDataPlot(DataPlot* plot);
 
-    bool getWindowBounds(const MainWindow::DataPoints &result,
-                         DataPoint &dpBottom, DataPoint &dpTop,
-                         const DataPoint &dpExit);
-    bool getAccuracy(const MainWindow::DataPoints &result,
-                     double &scoreAccuracy,
-                     const DataPoint &dpExit);
+    bool getWindowBounds(const MainWindow::DataPoints& result, DataPoint& dpBottom,
+                         DataPoint& dpTop, const DataPoint& dpExit);
+    bool getAccuracy(const MainWindow::DataPoints& result, double& scoreAccuracy,
+                     const DataPoint& dpExit);
 
     void optimize() { ScoringMethod::optimize(mMainWindow, mWindowBottom); }
 
 private:
-    MainWindow *mMainWindow;
+    MainWindow* mMainWindow;
 
-    double      mFromExit;
-    double      mWindowBottom;
-    double      mValidationWindow;
+    double mFromExit;
+    double mWindowBottom;
+    double mValidationWindow;
 
 signals:
 

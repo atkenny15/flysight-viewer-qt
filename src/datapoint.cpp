@@ -23,17 +23,12 @@
 
 #include "datapoint.h"
 
-DataPoint DataPoint::interpolate(
-        const DataPoint &p1,
-        const DataPoint &p2,
-        double a)
-{
+DataPoint DataPoint::interpolate(const DataPoint& p1, const DataPoint& p2, double a) {
     DataPoint ret;
 
     const qint64 ms1 = p1.dateTime.toMSecsSinceEpoch();
     const qint64 ms2 = p2.dateTime.toMSecsSinceEpoch();
-    ret.dateTime = QDateTime::fromMSecsSinceEpoch(
-                ms1 + (qint64) (a * (ms2 - ms1)));
+    ret.dateTime = QDateTime::fromMSecsSinceEpoch(ms1 + (qint64)(a * (ms2 - ms1)));
 
     ret.hasGeodetic = p1.hasGeodetic && p2.hasGeodetic;
 
@@ -49,8 +44,10 @@ DataPoint DataPoint::interpolate(
     ret.vAcc = p1.vAcc + a * (p2.vAcc - p1.vAcc);
     ret.sAcc = p1.sAcc + a * (p2.sAcc - p1.sAcc);
 
-    if (a < 0.5) ret.numSV = p1.numSV;
-    else         ret.numSV = p2.numSV;
+    if (a < 0.5)
+        ret.numSV = p1.numSV;
+    else
+        ret.numSV = p2.numSV;
 
     ret.t = p1.t + a * (p2.t - p1.t);
     ret.x = p1.x + a * (p2.x - p1.x);

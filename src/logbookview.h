@@ -27,30 +27,29 @@
 #include <QWidget>
 
 namespace Ui {
-    class LogbookView;
+class LogbookView;
 }
 
 class MainWindow;
 class QTableWidgetItem;
 
-class LogbookView : public QWidget
-{
+class LogbookView : public QWidget {
     Q_OBJECT
 
 public:
-    explicit LogbookView(QWidget *parent = 0);
+    explicit LogbookView(QWidget* parent = 0);
     ~LogbookView();
 
-    void setMainWindow(MainWindow *mainWindow);
+    void setMainWindow(MainWindow* mainWindow);
 
 protected:
-    virtual void keyPressEvent(QKeyEvent *);
+    virtual void keyPressEvent(QKeyEvent*);
 
 private:
-    Ui::LogbookView *ui;
-    MainWindow      *mMainWindow;
+    Ui::LogbookView* ui;
+    MainWindow* mMainWindow;
 
-    bool             suspendItemChanged;
+    bool suspendItemChanged;
 
 public slots:
     void updateView();
@@ -58,8 +57,8 @@ public slots:
 private slots:
     void onDoubleClick(int row, int column);
     void onSelectionChanged();
-    void onItemChanged(QTableWidgetItem *item);
-    void onSearchTextChanged(const QString &text);
+    void onItemChanged(QTableWidgetItem* item);
+    void onSearchTextChanged(const QString& text);
     void onSearchTextReturn();
 };
 

@@ -22,23 +22,19 @@
 ****************************************************************************/
 
 #include "wideopendistanceform.h"
-#include "ui_wideopendistanceform.h"
 
 #include "GeographicLib/Constants.hpp"
 #include "GeographicLib/Geodesic.hpp"
-
 #include "geographicutil.h"
 #include "mainwindow.h"
+#include "ui_wideopendistanceform.h"
 #include "wideopendistancescoring.h"
 
 using namespace GeographicLib;
 using namespace GeographicUtil;
 
-WideOpenDistanceForm::WideOpenDistanceForm(QWidget *parent) :
-    QWidget(parent),
-    ui(new Ui::WideOpenDistanceForm),
-    mMainWindow(0)
-{
+WideOpenDistanceForm::WideOpenDistanceForm(QWidget* parent) :
+    QWidget(parent), ui(new Ui::WideOpenDistanceForm), mMainWindow(0) {
     ui->setupUi(this);
 
     connect(ui->endLatitudeEdit, SIGNAL(editingFinished()), this, SLOT(onApplyButtonClicked()));
@@ -53,29 +49,26 @@ WideOpenDistanceForm::WideOpenDistanceForm(QWidget *parent) :
     connect(ui->endGlobeButton, SIGNAL(clicked()), this, SLOT(onEndButtonClicked()));
 }
 
-WideOpenDistanceForm::~WideOpenDistanceForm()
-{
+WideOpenDistanceForm::~WideOpenDistanceForm() {
     delete ui;
 }
 
-QSize WideOpenDistanceForm::sizeHint() const
-{
+QSize WideOpenDistanceForm::sizeHint() const {
     // Keeps windows from being initialized as very short
     return QSize(175, 175);
 }
 
-void WideOpenDistanceForm::setMainWindow(
-        MainWindow *mainWindow)
-{
+void WideOpenDistanceForm::setMainWindow(MainWindow* mainWindow) {
     mMainWindow = mainWindow;
 }
 
-void WideOpenDistanceForm::updateView()
-{
+void WideOpenDistanceForm::updateView() {
     // Return now if plot empty
-    if (mMainWindow->dataSize() == 0) return;
+    if (mMainWindow->dataSize() == 0)
+        return;
 
-    WideOpenDistanceScoring *method = (WideOpenDistanceScoring *) mMainWindow->scoringMethod(MainWindow::WideOpenDistance);
+    WideOpenDistanceScoring* method =
+        (WideOpenDistanceScoring*)mMainWindow->scoringMethod(MainWindow::WideOpenDistance);
 
     const double endLatitude = method->endLatitude();
     const double endLongitude = method->endLongitude();
@@ -117,26 +110,23 @@ void WideOpenDistanceForm::updateView()
     DataPoint dpBottom;
     bool success = method->getWindowBounds(mMainWindow->data(), dpBottom);
 
-    if (mMainWindow->dataSize() == 0)
-    {
+    if (mMainWindow->dataSize() == 0) {
         // Update display
         ui->distanceEdit->setText(tr("no data"));
     }
-    else if (dp0.z < bottom)
-    {
+    else if (dp0.z < bottom) {
         // Update display
         ui->distanceEdit->setText(tr("set exit"));
     }
-    else if (!success)
-    {
+    else if (!success) {
         // Update display
         ui->distanceEdit->setText(tr("incomplete data"));
     }
-    else
-    {
+    else {
         // Get projected point
         double lat0, lon0;
-        intercept(dpTop.lat, dpTop.lon, endLatitude, endLongitude, dpBottom.lat, dpBottom.lon, lat0, lon0);
+        intercept(dpTop.lat, dpTop.lon, endLatitude, endLongitude, dpBottom.lat, dpBottom.lon, lat0,
+                  lon0);
 
         // Distance from top
         double topDist;
@@ -147,19 +137,18 @@ void WideOpenDistanceForm::updateView()
         Geodesic::WGS84().Inverse(endLatitude, endLongitude, lat0, lon0, bottomDist);
 
         double s12;
-        if (topDist > bottomDist) s12 = topDist;
-        else                      s12 = laneLength - bottomDist;
+        if (topDist > bottomDist)
+            s12 = topDist;
+        else
+            s12 = laneLength - bottomDist;
 
         ui->distanceEdit->setText(QString("%1").arg(
-                                      (mMainWindow->units() == PlotValue::Metric) ?
-                                          s12 / 1000 :
-                                          s12 * METERS_TO_FEET / 5280,
-                                      0, 'f', 3));
+            (mMainWindow->units() == PlotValue::Metric) ? s12 / 1000 : s12 * METERS_TO_FEET / 5280,
+            0, 'f', 3));
     }
 }
 
-void WideOpenDistanceForm::onApplyButtonClicked()
-{
+void WideOpenDistanceForm::onApplyButtonClicked() {
     const double endLatitude = ui->endLatitudeEdit->text().toDouble();
     const double endLongitude = ui->endLongitudeEdit->text().toDouble();
     const double bearing = ui->bearingEdit->text().toDouble();
@@ -171,7 +160,8 @@ void WideOpenDistanceForm::onApplyButtonClicked()
     const double laneWidth = ui->laneWidthEdit->text().toDouble() / factor;
     const double laneLength = ui->laneLengthEdit->text().toDouble() / factor;
 
-    WideOpenDistanceScoring *method = (WideOpenDistanceScoring *) mMainWindow->scoringMethod(MainWindow::WideOpenDistance);
+    WideOpenDistanceScoring* method =
+        (WideOpenDistanceScoring*)mMainWindow->scoringMethod(MainWindow::WideOpenDistance);
     method->setEnd(endLatitude, endLongitude);
     method->setBearing(bearing);
     method->setBottom(bottom);
@@ -181,23 +171,18 @@ void WideOpenDistanceForm::onApplyButtonClicked()
     mMainWindow->setFocus();
 }
 
-void WideOpenDistanceForm::onStartButtonClicked()
-{
+void WideOpenDistanceForm::onStartButtonClicked() {
     mMainWindow->setMapMode(MainWindow::SetStart);
     setFocus();
 }
 
-void WideOpenDistanceForm::onEndButtonClicked()
-{
+void WideOpenDistanceForm::onEndButtonClicked() {
     mMainWindow->setMapMode(MainWindow::SetEnd);
     setFocus();
 }
 
-void WideOpenDistanceForm::keyPressEvent(
-        QKeyEvent *event)
-{
-    if (event->key() == Qt::Key_Escape)
-    {
+void WideOpenDistanceForm::keyPressEvent(QKeyEvent* event) {
+    if (event->key() == Qt::Key_Escape) {
         // Cancel map selection
         mMainWindow->setMapMode(MainWindow::Default);
 

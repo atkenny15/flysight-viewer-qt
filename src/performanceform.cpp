@@ -22,7 +22,6 @@
 ****************************************************************************/
 
 #include "performanceform.h"
-#include "ui_performanceform.h"
 
 #include "common.h"
 #include "dataplot.h"
@@ -31,12 +30,10 @@
 #include "performancescoring.h"
 #include "plotvalue.h"
 #include "ppcupload.h"
+#include "ui_performanceform.h"
 
-PerformanceForm::PerformanceForm(QWidget *parent) :
-    QWidget(parent),
-    ui(new Ui::PerformanceForm),
-    mMainWindow(0)
-{
+PerformanceForm::PerformanceForm(QWidget* parent) :
+    QWidget(parent), ui(new Ui::PerformanceForm), mMainWindow(0) {
     ui->setupUi(this);
 
     connect(ui->startEdit, SIGNAL(editingFinished()), this, SLOT(onApplyButtonClicked()));
@@ -46,29 +43,26 @@ PerformanceForm::PerformanceForm(QWidget *parent) :
     connect(ui->ppcButton, SIGNAL(clicked()), this, SLOT(onPpcButtonClicked()));
 }
 
-PerformanceForm::~PerformanceForm()
-{
+PerformanceForm::~PerformanceForm() {
     delete ui;
 }
 
-QSize PerformanceForm::sizeHint() const
-{
+QSize PerformanceForm::sizeHint() const {
     // Keeps windows from being initialized as very short
     return QSize(175, 175);
 }
 
-void PerformanceForm::setMainWindow(
-        MainWindow *mainWindow)
-{
+void PerformanceForm::setMainWindow(MainWindow* mainWindow) {
     mMainWindow = mainWindow;
 }
 
-void PerformanceForm::updateView()
-{
+void PerformanceForm::updateView() {
     // Return if plot empty
-    if (mMainWindow->dataSize() == 0) return;
+    if (mMainWindow->dataSize() == 0)
+        return;
 
-    PerformanceScoring *method = (PerformanceScoring *) mMainWindow->scoringMethod(MainWindow::Performance);
+    PerformanceScoring* method =
+        (PerformanceScoring*)mMainWindow->scoringMethod(MainWindow::Performance);
 
     const double start = method->startTime();
     const double end = method->endTime();
@@ -100,12 +94,12 @@ void PerformanceForm::updateView()
     ui->endElevEdit->setText(QString("%1").arg(dpEnd.z, 0, 'f', 3));
 }
 
-void PerformanceForm::onApplyButtonClicked()
-{
+void PerformanceForm::onApplyButtonClicked() {
     double start = ui->startEdit->text().toDouble();
     double end = ui->endEdit->text().toDouble();
 
-    PerformanceScoring *method = (PerformanceScoring *) mMainWindow->scoringMethod(MainWindow::Performance);
+    PerformanceScoring* method =
+        (PerformanceScoring*)mMainWindow->scoringMethod(MainWindow::Performance);
     method->setRange(start, end);
 
     ui->ppcButton->setEnabled(start < end);
@@ -113,10 +107,8 @@ void PerformanceForm::onApplyButtonClicked()
     mMainWindow->setFocus();
 }
 
-void PerformanceForm::keyPressEvent(QKeyEvent *event)
-{
-    if (event->key() == Qt::Key_Escape)
-    {
+void PerformanceForm::keyPressEvent(QKeyEvent* event) {
+    if (event->key() == Qt::Key_Escape) {
         // Reset window bounds
         updateView();
 
@@ -130,10 +122,12 @@ void PerformanceForm::keyPressEvent(QKeyEvent *event)
 void PerformanceForm::onPpcButtonClicked() {
 
     // Return if plot empty
-    if (mMainWindow->dataSize() == 0) return;
+    if (mMainWindow->dataSize() == 0)
+        return;
 
-    PPCUpload *uploader = new PPCUpload(mMainWindow);
-    PerformanceScoring *method = (PerformanceScoring *) mMainWindow->scoringMethod(MainWindow::Performance);
+    PPCUpload* uploader = new PPCUpload(mMainWindow);
+    PerformanceScoring* method =
+        (PerformanceScoring*)mMainWindow->scoringMethod(MainWindow::Performance);
     DataPoint dpTop = mMainWindow->interpolateDataT(method->startTime());
     DataPoint dpBottom = mMainWindow->interpolateDataT(method->endTime());
 
@@ -144,4 +138,3 @@ void PerformanceForm::onPpcButtonClicked() {
 
     uploader->upload("WS", windowTop, windowBottom, time, distance);
 }
-

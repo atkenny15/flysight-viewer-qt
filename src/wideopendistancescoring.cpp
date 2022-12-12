@@ -23,132 +23,106 @@
 
 #include "wideopendistancescoring.h"
 
-#include <QSettings>
-#include <QVector>
-
 #include "GeographicLib/Geodesic.hpp"
 #include "GeographicLib/GeodesicLine.hpp"
-
 #include "geographicutil.h"
 #include "mainwindow.h"
-#include "mapview.h"
 #include "mapcore.h"
+#include "mapview.h"
+#include <QSettings>
+#include <QVector>
 
 #define MAX_SPLIT_DEPTH 8
 
 using namespace GeographicLib;
 using namespace GeographicUtil;
 
-WideOpenDistanceScoring::WideOpenDistanceScoring(
-        MainWindow *mainWindow):
-    ScoringMethod(mainWindow),
-    mMainWindow(mainWindow),
-    mEndLatitude(51.0500),
-    mEndLongitude(-114.0667),
-    mBearing(0),
-    mBottom(6000 / METERS_TO_FEET),
-    mLaneWidth(500),
-    mLaneLength(10000)
-{
-
+WideOpenDistanceScoring::WideOpenDistanceScoring(MainWindow* mainWindow) :
+    ScoringMethod(mainWindow), mMainWindow(mainWindow), mEndLatitude(51.0500),
+    mEndLongitude(-114.0667), mBearing(0), mBottom(6000 / METERS_TO_FEET), mLaneWidth(500),
+    mLaneLength(10000) {
 }
 
-void WideOpenDistanceScoring::readSettings()
-{
+void WideOpenDistanceScoring::readSettings() {
     QSettings settings("FlySight", "Viewer");
 
     settings.beginGroup("wideOpenDistanceScoring");
-        mEndLatitude  = settings.value("endLatitude", mEndLatitude).toDouble();
-        mEndLongitude = settings.value("endLongitude", mEndLongitude).toDouble();
-        mBearing      = settings.value("bearing", mBearing).toDouble();
-        mBottom       = settings.value("bottom", mBottom).toDouble();
-        mLaneWidth    = settings.value("laneWidth", mLaneWidth).toDouble();
-        mLaneLength   = settings.value("laneLength", mLaneLength).toDouble();
+    mEndLatitude = settings.value("endLatitude", mEndLatitude).toDouble();
+    mEndLongitude = settings.value("endLongitude", mEndLongitude).toDouble();
+    mBearing = settings.value("bearing", mBearing).toDouble();
+    mBottom = settings.value("bottom", mBottom).toDouble();
+    mLaneWidth = settings.value("laneWidth", mLaneWidth).toDouble();
+    mLaneLength = settings.value("laneLength", mLaneLength).toDouble();
     settings.endGroup();
 }
 
-void WideOpenDistanceScoring::writeSettings()
-{
+void WideOpenDistanceScoring::writeSettings() {
     QSettings settings("FlySight", "Viewer");
 
     settings.beginGroup("wideOpenDistanceScoring");
-        settings.setValue("endLatitude", mEndLatitude);
-        settings.setValue("endLongitude", mEndLongitude);
-        settings.setValue("bearing", mBearing);
-        settings.setValue("bottom", mBottom);
-        settings.setValue("laneWidth", mLaneWidth);
-        settings.setValue("laneLength", mLaneLength);
+    settings.setValue("endLatitude", mEndLatitude);
+    settings.setValue("endLongitude", mEndLongitude);
+    settings.setValue("bearing", mBearing);
+    settings.setValue("bottom", mBottom);
+    settings.setValue("laneWidth", mLaneWidth);
+    settings.setValue("laneLength", mLaneLength);
     settings.endGroup();
 }
 
-void WideOpenDistanceScoring::setEnd(
-        double endLatitude,
-        double endLongitude)
-{
+void WideOpenDistanceScoring::setEnd(double endLatitude, double endLongitude) {
     mEndLatitude = endLatitude;
     mEndLongitude = endLongitude;
     emit scoringChanged();
 }
 
-void WideOpenDistanceScoring::setBearing(
-        double bearing)
-{
+void WideOpenDistanceScoring::setBearing(double bearing) {
     mBearing = bearing;
     emit scoringChanged();
 }
 
-void WideOpenDistanceScoring::setBottom(
-        double bottom)
-{
+void WideOpenDistanceScoring::setBottom(double bottom) {
     mBottom = bottom;
     emit scoringChanged();
 }
 
-void WideOpenDistanceScoring::setLaneWidth(
-        double laneWidth)
-{
+void WideOpenDistanceScoring::setLaneWidth(double laneWidth) {
     mLaneWidth = laneWidth;
     emit scoringChanged();
 }
 
-void WideOpenDistanceScoring::setLaneLength(
-        double laneLength)
-{
+void WideOpenDistanceScoring::setLaneLength(double laneLength) {
     mLaneLength = laneLength;
     emit scoringChanged();
 }
 
-void WideOpenDistanceScoring::prepareDataPlot(
-        DataPlot *plot)
-{
+void WideOpenDistanceScoring::prepareDataPlot(DataPlot* plot) {
     // Return now if plot empty
-    if (mMainWindow->dataSize() == 0) return;
+    if (mMainWindow->dataSize() == 0)
+        return;
 
     DataPoint dpBottom;
     bool success = getWindowBounds(mMainWindow->data(), dpBottom);
 
     // Add shading for scoring window
-    if (success && plot->yValue(DataPlot::Elevation)->visible())
-    {
+    if (success && plot->yValue(DataPlot::Elevation)->visible()) {
         DataPoint dpLower = mMainWindow->interpolateDataT(mMainWindow->rangeLower());
         DataPoint dpUpper = mMainWindow->interpolateDataT(mMainWindow->rangeUpper());
 
         const double xMin = plot->xValue()->value(dpLower, mMainWindow->units());
         const double xMax = plot->xValue()->value(dpUpper, mMainWindow->units());
 
-        QVector< double > xElev, yElev;
+        QVector<double> xElev, yElev;
 
         xElev << xMin << xMax;
         yElev << plot->yValue(DataPlot::Elevation)->value(dpBottom, mMainWindow->units())
               << plot->yValue(DataPlot::Elevation)->value(dpBottom, mMainWindow->units());
 
-        QCPGraph *graph = plot->addGraph(
-                    plot->axisRect()->axis(QCPAxis::atBottom),
-                    plot->yValue(DataPlot::Elevation)->axis());
+        QCPGraph* graph = plot->addGraph(plot->axisRect()->axis(QCPAxis::atBottom),
+                                         plot->yValue(DataPlot::Elevation)->axis());
         graph->setData(xElev, yElev);
         graph->setPen(QPen(QBrush(Qt::lightGray), mMainWindow->lineThickness(), Qt::DashLine));
 
-        QCPItemRect *rect = new QCPItemRect(plot);
+        QCPItemRect* rect = new QCPItemRect(plot);
 
         rect->setPen(QPen(QBrush(Qt::lightGray), mMainWindow->lineThickness(), Qt::DashLine));
         rect->setBrush(QColor(0, 0, 0, 8));
@@ -156,8 +130,7 @@ void WideOpenDistanceScoring::prepareDataPlot(
         rect->topLeft->setType(QCPItemPosition::ptAxisRectRatio);
         rect->topLeft->setAxes(plot->xAxis, plot->yValue(DataPlot::Elevation)->axis());
         rect->topLeft->setCoords(
-                    (plot->xValue()->value(dpBottom, mMainWindow->units()) - xMin) / (xMax - xMin),
-                    -0.1);
+            (plot->xValue()->value(dpBottom, mMainWindow->units()) - xMin) / (xMax - xMin), -0.1);
 
         rect->bottomRight->setType(QCPItemPosition::ptAxisRectRatio);
         rect->bottomRight->setAxes(plot->xAxis, plot->yValue(DataPlot::Elevation)->axis());
@@ -165,18 +138,18 @@ void WideOpenDistanceScoring::prepareDataPlot(
     }
 }
 
-void WideOpenDistanceScoring::prepareMapView(
-        MapView *view)
-{
+void WideOpenDistanceScoring::prepareMapView(MapView* view) {
     // Return now if plot empty
-    if (mMainWindow->dataSize() == 0) return;
+    if (mMainWindow->dataSize() == 0)
+        return;
 
     // Distance threshold
     const double threshold = view->metersPerPixel();
 
     // Get start point
     double woProjLat, woProjLon;
-    Geodesic::WGS84().Direct(mEndLatitude, mEndLongitude, mBearing, mLaneLength, woProjLat, woProjLon);
+    Geodesic::WGS84().Direct(mEndLatitude, mEndLongitude, mBearing, mLaneLength, woProjLat,
+                             woProjLon);
 
     // Draw lane center
     QList<QVariant> data;
@@ -197,17 +170,15 @@ void WideOpenDistanceScoring::prepareMapView(
 
     // Draw shading around lane
     QList<QVariant> lt, rt;
-    for (int i = 0; i < data.size(); ++i)
-    {
+    for (int i = 0; i < data.size(); ++i) {
         double lat1 = data[i].toMap()["lat"].toDouble();
         double lon1 = data[i].toMap()["lng"].toDouble();
 
         double ltBearing, rtBearing;
 
-        if (i + 1 < data.size())
-        {
-            double lat2 = data[i+1].toMap()["lat"].toDouble();
-            double lon2 = data[i+1].toMap()["lng"].toDouble();
+        if (i + 1 < data.size()) {
+            double lat2 = data[i + 1].toMap()["lat"].toDouble();
+            double lon2 = data[i + 1].toMap()["lng"].toDouble();
 
             double azi1, azi2;
             Geodesic::WGS84().Inverse(lat1, lon1, lat2, lon2, azi1, azi2);
@@ -215,10 +186,9 @@ void WideOpenDistanceScoring::prepareMapView(
             ltBearing = azi1 + 90;
             rtBearing = azi1 - 90;
         }
-        else if (i - 1 >= 0)
-        {
-            double lat2 = data[i-1].toMap()["lat"].toDouble();
-            double lon2 = data[i-1].toMap()["lng"].toDouble();
+        else if (i - 1 >= 0) {
+            double lat2 = data[i - 1].toMap()["lat"].toDouble();
+            double lon2 = data[i - 1].toMap()["lng"].toDouble();
 
             double azi1, azi2;
             Geodesic::WGS84().Inverse(lat2, lon2, lat1, lon1, azi1, azi2);
@@ -252,14 +222,15 @@ void WideOpenDistanceScoring::prepareMapView(
     DataPoint dpBottom;
     bool success = getWindowBounds(mMainWindow->data(), dpBottom);
 
-    if (mMainWindow->dataSize() == 0)
-    {
+    if (mMainWindow->dataSize() == 0) {
         // Draw long finish line
         double woLeftLat, woLeftLon;
-        Geodesic::WGS84().Direct(mEndLatitude, mEndLongitude, mBearing - 90, mLaneLength / 2, woLeftLat, woLeftLon);
+        Geodesic::WGS84().Direct(mEndLatitude, mEndLongitude, mBearing - 90, mLaneLength / 2,
+                                 woLeftLat, woLeftLon);
 
         double woRightLat, woRightLon;
-        Geodesic::WGS84().Direct(mEndLatitude, mEndLongitude, mBearing + 90, mLaneLength / 2, woRightLat, woRightLon);
+        Geodesic::WGS84().Direct(mEndLatitude, mEndLongitude, mBearing + 90, mLaneLength / 2,
+                                 woRightLat, woRightLon);
 
         data.clear();
 
@@ -277,11 +248,11 @@ void WideOpenDistanceScoring::prepareMapView(
         // Add to map
         view->mapCore()->addPolyline(data);
     }
-    else if (dp0.z >= mBottom && success)
-    {
+    else if (dp0.z >= mBottom && success) {
         // Get projected point
         double lat0, lon0;
-        intercept(woProjLat, woProjLon, mEndLatitude, mEndLongitude, dpBottom.lat, dpBottom.lon, lat0, lon0);
+        intercept(woProjLat, woProjLon, mEndLatitude, mEndLongitude, dpBottom.lat, dpBottom.lon,
+                  lat0, lon0);
 
         // Distance from top
         double topDist;
@@ -292,17 +263,16 @@ void WideOpenDistanceScoring::prepareMapView(
         Geodesic::WGS84().Inverse(mEndLatitude, mEndLongitude, lat0, lon0, bottomDist);
 
         bool inside = true;
-        if (topDist > bottomDist)
-        {
-            if (topDist > mLaneLength)
-            {
+        if (topDist > bottomDist) {
+            if (topDist > mLaneLength) {
                 // Point is after bottom
                 inside = false;
 
                 double woLeftLat, woLeftLon;
 
                 // Draw first line of arrow
-                Geodesic::WGS84().Direct(mEndLatitude, mEndLongitude, mBearing + 45, mLaneWidth, woLeftLat, woLeftLon);
+                Geodesic::WGS84().Direct(mEndLatitude, mEndLongitude, mBearing + 45, mLaneWidth,
+                                         woLeftLat, woLeftLon);
 
                 data.clear();
 
@@ -318,7 +288,8 @@ void WideOpenDistanceScoring::prepareMapView(
                 data.push_back(val);
 
                 // Draw second line of arrow
-                Geodesic::WGS84().Direct(mEndLatitude, mEndLongitude, mBearing - 45, mLaneWidth, woLeftLat, woLeftLon);
+                Geodesic::WGS84().Direct(mEndLatitude, mEndLongitude, mBearing - 45, mLaneWidth,
+                                         woLeftLat, woLeftLon);
 
                 splitLine(data, mEndLatitude, mEndLongitude, woLeftLat, woLeftLon, threshold, 0);
 
@@ -330,17 +301,16 @@ void WideOpenDistanceScoring::prepareMapView(
                 view->mapCore()->addPolyline(data);
             }
         }
-        else
-        {
-            if (bottomDist > mLaneLength)
-            {
+        else {
+            if (bottomDist > mLaneLength) {
                 // Point is before top
                 inside = false;
 
                 double woLeftLat, woLeftLon;
 
                 // Draw first line of arrow
-                Geodesic::WGS84().Direct(woProjLat, woProjLon, mBearing + 135, mLaneWidth, woLeftLat, woLeftLon);
+                Geodesic::WGS84().Direct(woProjLat, woProjLon, mBearing + 135, mLaneWidth,
+                                         woLeftLat, woLeftLon);
 
                 data.clear();
 
@@ -356,7 +326,8 @@ void WideOpenDistanceScoring::prepareMapView(
                 data.push_back(val);
 
                 // Draw second line of arrow
-                Geodesic::WGS84().Direct(woProjLat, woProjLon, mBearing - 135, mLaneWidth, woLeftLat, woLeftLon);
+                Geodesic::WGS84().Direct(woProjLat, woProjLon, mBearing - 135, mLaneWidth,
+                                         woLeftLat, woLeftLon);
 
                 splitLine(data, woProjLat, woProjLon, woLeftLat, woLeftLon, threshold, 0);
 
@@ -369,8 +340,7 @@ void WideOpenDistanceScoring::prepareMapView(
             }
         }
 
-        if (inside)
-        {
+        if (inside) {
             // Draw finish line
             double woLeftLat, woLeftLon;
             Geodesic::WGS84().Direct(lat0, lon0, mBearing - 90, mLaneWidth, woLeftLat, woLeftLon);
@@ -395,14 +365,15 @@ void WideOpenDistanceScoring::prepareMapView(
             view->mapCore()->addPolyline(data);
         }
     }
-    else
-    {
+    else {
         // Draw first line of 'X'
         double woLeftLat, woLeftLon;
         double woRightLat, woRightLon;
 
-        Geodesic::WGS84().Direct(mEndLatitude, mEndLongitude, mBearing + 45, mLaneWidth, woLeftLat, woLeftLon);
-        Geodesic::WGS84().Direct(mEndLatitude, mEndLongitude, mBearing + 225, mLaneWidth, woRightLat, woRightLon);
+        Geodesic::WGS84().Direct(mEndLatitude, mEndLongitude, mBearing + 45, mLaneWidth, woLeftLat,
+                                 woLeftLon);
+        Geodesic::WGS84().Direct(mEndLatitude, mEndLongitude, mBearing + 225, mLaneWidth,
+                                 woRightLat, woRightLon);
 
         data.clear();
 
@@ -421,8 +392,10 @@ void WideOpenDistanceScoring::prepareMapView(
         view->mapCore()->addPolyline(data);
 
         // Draw second line of 'X'
-        Geodesic::WGS84().Direct(mEndLatitude, mEndLongitude, mBearing - 45, mLaneWidth, woLeftLat, woLeftLon);
-        Geodesic::WGS84().Direct(mEndLatitude, mEndLongitude, mBearing - 225, mLaneWidth, woRightLat, woRightLon);
+        Geodesic::WGS84().Direct(mEndLatitude, mEndLongitude, mBearing - 45, mLaneWidth, woLeftLat,
+                                 woLeftLon);
+        Geodesic::WGS84().Direct(mEndLatitude, mEndLongitude, mBearing - 225, mLaneWidth,
+                                 woRightLat, woRightLon);
 
         data.clear();
 
@@ -441,24 +414,17 @@ void WideOpenDistanceScoring::prepareMapView(
     }
 }
 
-void WideOpenDistanceScoring::splitLine(
-        QList<QVariant> &data,
-        double startLat,
-        double startLon,
-        double endLat,
-        double endLon,
-        double threshold,
-        int depth)
-{
+void WideOpenDistanceScoring::splitLine(QList<QVariant>& data, double startLat, double startLon,
+                                        double endLat, double endLon, double threshold, int depth) {
     GeodesicLine l = Geodesic::WGS84().InverseLine(startLat, startLon, endLat, endLon);
     double midLat, midLon;
     l.Position(l.Distance() / 2, midLat, midLon);
 
     double dist;
-    Geodesic::WGS84().Inverse((startLat + endLat) / 2, (startLon + endLon) / 2, midLat, midLon, dist);
+    Geodesic::WGS84().Inverse((startLat + endLat) / 2, (startLon + endLon) / 2, midLat, midLon,
+                              dist);
 
-    if (dist > threshold && depth < MAX_SPLIT_DEPTH)
-    {
+    if (dist > threshold && depth < MAX_SPLIT_DEPTH) {
         splitLine(data, startLat, startLon, midLat, midLon, threshold, depth + 1);
 
         QMap<QString, QVariant> val;
@@ -470,59 +436,48 @@ void WideOpenDistanceScoring::splitLine(
     }
 }
 
-bool WideOpenDistanceScoring::getWindowBounds(
-        const MainWindow::DataPoints &result,
-        DataPoint &dpBottom)
-{
+bool WideOpenDistanceScoring::getWindowBounds(const MainWindow::DataPoints& result,
+                                              DataPoint& dpBottom) {
     bool foundBottom = false;
     int bottom;
 
-    for (int i = result.size() - 1; i >= 0; --i)
-    {
-        const DataPoint &dp = result[i];
+    for (int i = result.size() - 1; i >= 0; --i) {
+        const DataPoint& dp = result[i];
 
-        if (dp.z < mBottom)
-        {
+        if (dp.z < mBottom) {
             bottom = i;
             foundBottom = true;
         }
 
-        if (dp.t < 0) break;
+        if (dp.t < 0)
+            break;
     }
 
-    if (foundBottom)
-    {
+    if (foundBottom) {
         // Calculate bottom of window
-        const DataPoint &dp1 = result[bottom - 1];
-        const DataPoint &dp2 = result[bottom];
+        const DataPoint& dp1 = result[bottom - 1];
+        const DataPoint& dp2 = result[bottom];
         dpBottom = DataPoint::interpolate(dp1, dp2, (mBottom - dp1.z) / (dp2.z - dp1.z));
 
         return true;
     }
-    else
-    {
+    else {
         return false;
     }
 }
 
-bool WideOpenDistanceScoring::updateReference(
-        double lat,
-        double lon)
-{
-    if (mMainWindow->mapMode() == MainWindow::SetStart)
-    {
+bool WideOpenDistanceScoring::updateReference(double lat, double lon) {
+    if (mMainWindow->mapMode() == MainWindow::SetStart) {
         double azi1, azi2;
         Geodesic::WGS84().Inverse(mEndLatitude, mEndLongitude, lat, lon, azi1, azi2);
         setBearing(azi1);
         return true;
     }
-    else if (mMainWindow->mapMode() == MainWindow::SetEnd)
-    {
+    else if (mMainWindow->mapMode() == MainWindow::SetEnd) {
         setEnd(lat, lon);
         return true;
     }
-    else
-    {
+    else {
         return false;
     }
 }

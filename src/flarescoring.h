@@ -28,28 +28,27 @@
 
 class MainWindow;
 
-class FlareScoring : public ScoringMethod
-{
+class FlareScoring : public ScoringMethod {
 public:
-    FlareScoring(MainWindow *mainWindow);
+    FlareScoring(MainWindow* mainWindow);
 
     double windowBottom(void) const { return mWindowBottom; }
     void setWindowBottom(double windowBottom);
 
-    double score(const MainWindow::DataPoints &result);
+    double score(const MainWindow::DataPoints& result);
     QString scoreAsText(double score);
 
-    void prepareDataPlot(DataPlot *plot);
+    void prepareDataPlot(DataPlot* plot);
 
-    bool getWindowBounds(const MainWindow::DataPoints &result,
-                         DataPoint &dpBottom, DataPoint &dpTop);
+    bool getWindowBounds(const MainWindow::DataPoints& result, DataPoint& dpBottom,
+                         DataPoint& dpTop);
 
     void optimize() { ScoringMethod::optimize(mMainWindow, mWindowBottom); }
 
 private:
-    MainWindow *mMainWindow;
+    MainWindow* mMainWindow;
 
-    double      mWindowBottom;
+    double mWindowBottom;
 
 signals:
 

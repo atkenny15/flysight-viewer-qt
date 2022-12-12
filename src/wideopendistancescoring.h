@@ -28,10 +28,9 @@
 
 class MainWindow;
 
-class WideOpenDistanceScoring : public ScoringMethod
-{
+class WideOpenDistanceScoring : public ScoringMethod {
 public:
-    WideOpenDistanceScoring(MainWindow *mainWindow);
+    WideOpenDistanceScoring(MainWindow* mainWindow);
 
     double endLatitude(void) const { return mEndLatitude; }
     double endLongitude(void) const { return mEndLongitude; }
@@ -49,33 +48,30 @@ public:
     double laneLength(void) const { return mLaneLength; }
     void setLaneLength(double laneLength);
 
-    void prepareDataPlot(DataPlot *plot);
-    void prepareMapView(MapView *view);
+    void prepareDataPlot(DataPlot* plot);
+    void prepareMapView(MapView* view);
 
     bool updateReference(double lat, double lon);
 
-    bool getWindowBounds(const MainWindow::DataPoints &result,
-                         DataPoint &dpBottom);
+    bool getWindowBounds(const MainWindow::DataPoints& result, DataPoint& dpBottom);
 
     void readSettings();
     void writeSettings();
 
 private:
-    MainWindow *mMainWindow;
+    MainWindow* mMainWindow;
 
-    double      mEndLatitude;
-    double      mEndLongitude;
+    double mEndLatitude;
+    double mEndLongitude;
 
-    double      mBearing;
+    double mBearing;
 
-    double      mBottom;
-    double      mLaneWidth;
-    double      mLaneLength;
+    double mBottom;
+    double mLaneWidth;
+    double mLaneLength;
 
-    void splitLine(QList<QVariant> &data,
-                   double startLat, double startLon,
-                   double endLat, double endLon,
-                   double threshold, int depth);
+    void splitLine(QList<QVariant>& data, double startLat, double startLon, double endLat,
+                   double endLon, double threshold, int depth);
 
 signals:
 

@@ -22,24 +22,20 @@
 ****************************************************************************/
 
 #include "wideopenspeedform.h"
-#include "ui_wideopenspeedform.h"
 
 #include "GeographicLib/Constants.hpp"
 #include "GeographicLib/Geodesic.hpp"
-
 #include "geographicutil.h"
 #include "mainwindow.h"
 #include "plotvalue.h"
+#include "ui_wideopenspeedform.h"
 #include "wideopenspeedscoring.h"
 
 using namespace GeographicLib;
 using namespace GeographicUtil;
 
-WideOpenSpeedForm::WideOpenSpeedForm(QWidget *parent) :
-    QWidget(parent),
-    ui(new Ui::WideOpenSpeedForm),
-    mMainWindow(0)
-{
+WideOpenSpeedForm::WideOpenSpeedForm(QWidget* parent) :
+    QWidget(parent), ui(new Ui::WideOpenSpeedForm), mMainWindow(0) {
     ui->setupUi(this);
 
     connect(ui->endLatitudeEdit, SIGNAL(editingFinished()), this, SLOT(onApplyButtonClicked()));
@@ -54,29 +50,26 @@ WideOpenSpeedForm::WideOpenSpeedForm(QWidget *parent) :
     connect(ui->endGlobeButton, SIGNAL(clicked()), this, SLOT(onEndButtonClicked()));
 }
 
-WideOpenSpeedForm::~WideOpenSpeedForm()
-{
+WideOpenSpeedForm::~WideOpenSpeedForm() {
     delete ui;
 }
 
-QSize WideOpenSpeedForm::sizeHint() const
-{
+QSize WideOpenSpeedForm::sizeHint() const {
     // Keeps windows from being initialized as very short
     return QSize(175, 175);
 }
 
-void WideOpenSpeedForm::setMainWindow(
-        MainWindow *mainWindow)
-{
+void WideOpenSpeedForm::setMainWindow(MainWindow* mainWindow) {
     mMainWindow = mainWindow;
 }
 
-void WideOpenSpeedForm::updateView()
-{
+void WideOpenSpeedForm::updateView() {
     // Return now if plot empty
-    if (mMainWindow->dataSize() == 0) return;
+    if (mMainWindow->dataSize() == 0)
+        return;
 
-    WideOpenSpeedScoring *method = (WideOpenSpeedScoring *) mMainWindow->scoringMethod(MainWindow::WideOpenSpeed);
+    WideOpenSpeedScoring* method =
+        (WideOpenSpeedScoring*)mMainWindow->scoringMethod(MainWindow::WideOpenSpeed);
 
     const double endLatitude = method->endLatitude();
     const double endLongitude = method->endLongitude();
@@ -123,40 +116,35 @@ void WideOpenSpeedForm::updateView()
     // Invalidate finish point
     method->invalidateFinish();
 
-    if (mMainWindow->dataSize() == 0)
-    {
+    if (mMainWindow->dataSize() == 0) {
         // Update display
         ui->speedEdit->setText(tr("no data"));
     }
-    else if (dp0.z < bottom)
-    {
+    else if (dp0.z < bottom) {
         // Update display
         ui->speedEdit->setText(tr("set exit"));
     }
-    else if (exitDist > laneLength * 10)
-    {
+    else if (exitDist > laneLength * 10) {
         // Update display
         ui->speedEdit->setText(tr("set reference"));
     }
-    else if (!success)
-    {
+    else if (!success) {
         // Update display
         ui->speedEdit->setText(tr("incomplete data"));
     }
-    else
-    {
+    else {
         // Calculate time
         int i, start = mMainWindow->findIndexBelowT(0) + 1;
         double d1, t;
         DataPoint dp1;
 
-        for (i = start; i < mMainWindow->dataSize(); ++i)
-        {
-            const DataPoint &dp2 = mMainWindow->dataPoint(i);
+        for (i = start; i < mMainWindow->dataSize(); ++i) {
+            const DataPoint& dp2 = mMainWindow->dataPoint(i);
 
             // Get projected point
             double lat0, lon0;
-            intercept(dpTop.lat, dpTop.lon, endLatitude, endLongitude, dp2.lat, dp2.lon, lat0, lon0);
+            intercept(dpTop.lat, dpTop.lon, endLatitude, endLongitude, dp2.lat, dp2.lon, lat0,
+                      lon0);
 
             // Distance from top
             double topDist;
@@ -167,17 +155,14 @@ void WideOpenSpeedForm::updateView()
             Geodesic::WGS84().Inverse(endLatitude, endLongitude, lat0, lon0, bottomDist);
 
             double d2;
-            if (topDist > bottomDist)
-            {
+            if (topDist > bottomDist) {
                 d2 = topDist;
             }
-            else
-            {
+            else {
                 d2 = laneLength - bottomDist;
             }
 
-            if (i > start && d1 < laneLength && d2 >= laneLength)
-            {
+            if (i > start && d1 < laneLength && d2 >= laneLength) {
                 t = dp1.t + (dp2.t - dp1.t) / (d2 - d1) * (laneLength - d1);
                 break;
             }
@@ -186,29 +171,24 @@ void WideOpenSpeedForm::updateView()
             dp1 = dp2;
         }
 
-        if (i < mMainWindow->dataSize())
-        {
+        if (i < mMainWindow->dataSize()) {
             DataPoint dp = mMainWindow->interpolateDataT(t);
             method->setFinishPoint(dp);
 
-            if (dp.t <= dpBottom.t)
-            {
+            if (dp.t <= dpBottom.t) {
                 ui->speedEdit->setText(dp.dateTime.toUTC().toString("hh:mm:ss.zzz"));
             }
-            else
-            {
+            else {
                 ui->speedEdit->setText(tr("did not finish"));
             }
         }
-        else
-        {
+        else {
             ui->speedEdit->setText(tr("did not finish"));
         }
     }
 }
 
-void WideOpenSpeedForm::onApplyButtonClicked()
-{
+void WideOpenSpeedForm::onApplyButtonClicked() {
     const double endLatitude = ui->endLatitudeEdit->text().toDouble();
     const double endLongitude = ui->endLongitudeEdit->text().toDouble();
     const double bearing = ui->bearingEdit->text().toDouble();
@@ -220,7 +200,8 @@ void WideOpenSpeedForm::onApplyButtonClicked()
     const double laneWidth = ui->laneWidthEdit->text().toDouble() / factor;
     const double laneLength = ui->laneLengthEdit->text().toDouble() / factor;
 
-    WideOpenSpeedScoring *method = (WideOpenSpeedScoring *) mMainWindow->scoringMethod(MainWindow::WideOpenSpeed);
+    WideOpenSpeedScoring* method =
+        (WideOpenSpeedScoring*)mMainWindow->scoringMethod(MainWindow::WideOpenSpeed);
     method->setEnd(endLatitude, endLongitude);
     method->setBearing(bearing);
     method->setBottom(bottom);
@@ -230,23 +211,18 @@ void WideOpenSpeedForm::onApplyButtonClicked()
     mMainWindow->setFocus();
 }
 
-void WideOpenSpeedForm::onStartButtonClicked()
-{
+void WideOpenSpeedForm::onStartButtonClicked() {
     mMainWindow->setMapMode(MainWindow::SetStart);
     setFocus();
 }
 
-void WideOpenSpeedForm::onEndButtonClicked()
-{
+void WideOpenSpeedForm::onEndButtonClicked() {
     mMainWindow->setMapMode(MainWindow::SetEnd);
     setFocus();
 }
 
-void WideOpenSpeedForm::keyPressEvent(
-        QKeyEvent *event)
-{
-    if (event->key() == Qt::Key_Escape)
-    {
+void WideOpenSpeedForm::keyPressEvent(QKeyEvent* event) {
+    if (event->key() == Qt::Key_Escape) {
         // Cancel map selection
         mMainWindow->setMapMode(MainWindow::Default);
 

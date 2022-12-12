@@ -27,29 +27,28 @@
 #include <QWidget>
 
 namespace Ui {
-    class FlareForm;
+class FlareForm;
 }
 
 class MainWindow;
 
-class FlareForm : public QWidget
-{
+class FlareForm : public QWidget {
     Q_OBJECT
 
 public:
-    explicit FlareForm(QWidget *parent = 0);
+    explicit FlareForm(QWidget* parent = 0);
     ~FlareForm();
 
     virtual QSize sizeHint() const;
 
-    void setMainWindow(MainWindow *mainWindow);
+    void setMainWindow(MainWindow* mainWindow);
 
 protected:
-    virtual void keyPressEvent(QKeyEvent *);
+    virtual void keyPressEvent(QKeyEvent*);
 
 private:
-    Ui::FlareForm *ui;
-    MainWindow  *mMainWindow;
+    Ui::FlareForm* ui;
+    MainWindow* mMainWindow;
 
 public slots:
     void updateView();
@@ -61,6 +60,5 @@ private slots:
     void onOptimalButtonClicked();
     void onOptimizeButtonClicked();
 };
-
 
 #endif // FLAREFORM_H

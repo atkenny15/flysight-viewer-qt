@@ -32,24 +32,23 @@ class WideOpenDistanceForm;
 
 class MainWindow;
 
-class WideOpenDistanceForm : public QWidget
-{
+class WideOpenDistanceForm : public QWidget {
     Q_OBJECT
 
 public:
-    explicit WideOpenDistanceForm(QWidget *parent = 0);
+    explicit WideOpenDistanceForm(QWidget* parent = 0);
     ~WideOpenDistanceForm();
 
     virtual QSize sizeHint() const;
 
-    void setMainWindow(MainWindow *mainWindow);
+    void setMainWindow(MainWindow* mainWindow);
 
 protected:
-    virtual void keyPressEvent(QKeyEvent *);
+    virtual void keyPressEvent(QKeyEvent*);
 
 private:
-    Ui::WideOpenDistanceForm *ui;
-    MainWindow  *mMainWindow;
+    Ui::WideOpenDistanceForm* ui;
+    MainWindow* mMainWindow;
 
 public slots:
     void updateView();

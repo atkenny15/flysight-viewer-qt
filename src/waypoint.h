@@ -24,8 +24,7 @@
 #ifndef WAYPOINT_H
 #define WAYPOINT_H
 
-class Waypoint
-{
+class Waypoint {
 public:
     double m_lat, m_lon, m_hMSL;
 

@@ -23,133 +23,106 @@
 
 #include "wideopenspeedscoring.h"
 
-#include <QSettings>
-#include <QVector>
-
 #include "GeographicLib/Geodesic.hpp"
 #include "GeographicLib/GeodesicLine.hpp"
-
 #include "geographicutil.h"
 #include "mainwindow.h"
-#include "mapview.h"
 #include "mapcore.h"
+#include "mapview.h"
+#include <QSettings>
+#include <QVector>
 
 #define MAX_SPLIT_DEPTH 8
 
 using namespace GeographicLib;
 using namespace GeographicUtil;
 
-WideOpenSpeedScoring::WideOpenSpeedScoring(
-        MainWindow *mainWindow):
-    ScoringMethod(mainWindow),
-    mMainWindow(mainWindow),
-    mEndLatitude(51.0500),
-    mEndLongitude(-114.0667),
-    mBearing(0),
-    mBottom(4500 / METERS_TO_FEET),
-    mLaneWidth(500),
-    mLaneLength(10000),
-    mFinishValid(false)
-{
-
+WideOpenSpeedScoring::WideOpenSpeedScoring(MainWindow* mainWindow) :
+    ScoringMethod(mainWindow), mMainWindow(mainWindow), mEndLatitude(51.0500),
+    mEndLongitude(-114.0667), mBearing(0), mBottom(4500 / METERS_TO_FEET), mLaneWidth(500),
+    mLaneLength(10000), mFinishValid(false) {
 }
 
-void WideOpenSpeedScoring::readSettings()
-{
+void WideOpenSpeedScoring::readSettings() {
     QSettings settings("FlySight", "Viewer");
 
     settings.beginGroup("wideOpenSpeedScoring");
-        mEndLatitude  = settings.value("endLatitude", mEndLatitude).toDouble();
-        mEndLongitude = settings.value("endLongitude", mEndLongitude).toDouble();
-        mBearing      = settings.value("bearing", mBearing).toDouble();
-        mBottom       = settings.value("bottom", mBottom).toDouble();
-        mLaneWidth    = settings.value("laneWidth", mLaneWidth).toDouble();
-        mLaneLength   = settings.value("laneLength", mLaneLength).toDouble();
+    mEndLatitude = settings.value("endLatitude", mEndLatitude).toDouble();
+    mEndLongitude = settings.value("endLongitude", mEndLongitude).toDouble();
+    mBearing = settings.value("bearing", mBearing).toDouble();
+    mBottom = settings.value("bottom", mBottom).toDouble();
+    mLaneWidth = settings.value("laneWidth", mLaneWidth).toDouble();
+    mLaneLength = settings.value("laneLength", mLaneLength).toDouble();
     settings.endGroup();
 }
 
-void WideOpenSpeedScoring::writeSettings()
-{
+void WideOpenSpeedScoring::writeSettings() {
     QSettings settings("FlySight", "Viewer");
 
     settings.beginGroup("wideOpenSpeedScoring");
-        settings.setValue("endLatitude", mEndLatitude);
-        settings.setValue("endLongitude", mEndLongitude);
-        settings.setValue("bearing", mBearing);
-        settings.setValue("bottom", mBottom);
-        settings.setValue("laneWidth", mLaneWidth);
-        settings.setValue("laneLength", mLaneLength);
+    settings.setValue("endLatitude", mEndLatitude);
+    settings.setValue("endLongitude", mEndLongitude);
+    settings.setValue("bearing", mBearing);
+    settings.setValue("bottom", mBottom);
+    settings.setValue("laneWidth", mLaneWidth);
+    settings.setValue("laneLength", mLaneLength);
     settings.endGroup();
 }
 
-void WideOpenSpeedScoring::setEnd(
-        double endLatitude,
-        double endLongitude)
-{
+void WideOpenSpeedScoring::setEnd(double endLatitude, double endLongitude) {
     mEndLatitude = endLatitude;
     mEndLongitude = endLongitude;
     emit scoringChanged();
 }
 
-void WideOpenSpeedScoring::setBearing(
-        double bearing)
-{
+void WideOpenSpeedScoring::setBearing(double bearing) {
     mBearing = bearing;
     emit scoringChanged();
 }
 
-void WideOpenSpeedScoring::setBottom(
-        double bottom)
-{
+void WideOpenSpeedScoring::setBottom(double bottom) {
     mBottom = bottom;
     emit scoringChanged();
 }
 
-void WideOpenSpeedScoring::setLaneWidth(
-        double laneWidth)
-{
+void WideOpenSpeedScoring::setLaneWidth(double laneWidth) {
     mLaneWidth = laneWidth;
     emit scoringChanged();
 }
 
-void WideOpenSpeedScoring::setLaneLength(
-        double laneLength)
-{
+void WideOpenSpeedScoring::setLaneLength(double laneLength) {
     mLaneLength = laneLength;
     emit scoringChanged();
 }
 
-void WideOpenSpeedScoring::prepareDataPlot(
-        DataPlot *plot)
-{
+void WideOpenSpeedScoring::prepareDataPlot(DataPlot* plot) {
     // Return now if plot empty
-    if (mMainWindow->dataSize() == 0) return;
+    if (mMainWindow->dataSize() == 0)
+        return;
 
     DataPoint dpBottom;
     bool success = getWindowBounds(mMainWindow->data(), dpBottom);
 
     // Add shading for scoring window
-    if (success && plot->yValue(DataPlot::Elevation)->visible())
-    {
+    if (success && plot->yValue(DataPlot::Elevation)->visible()) {
         DataPoint dpLower = mMainWindow->interpolateDataT(mMainWindow->rangeLower());
         DataPoint dpUpper = mMainWindow->interpolateDataT(mMainWindow->rangeUpper());
 
         const double xMin = plot->xValue()->value(dpLower, mMainWindow->units());
         const double xMax = plot->xValue()->value(dpUpper, mMainWindow->units());
 
-        QVector< double > xElev, yElev;
+        QVector<double> xElev, yElev;
 
         xElev << xMin << xMax;
         yElev << plot->yValue(DataPlot::Elevation)->value(dpBottom, mMainWindow->units())
               << plot->yValue(DataPlot::Elevation)->value(dpBottom, mMainWindow->units());
 
-        QCPGraph *graph = plot->addGraph(
-                    plot->axisRect()->axis(QCPAxis::atBottom),
-                    plot->yValue(DataPlot::Elevation)->axis());
+        QCPGraph* graph = plot->addGraph(plot->axisRect()->axis(QCPAxis::atBottom),
+                                         plot->yValue(DataPlot::Elevation)->axis());
         graph->setData(xElev, yElev);
         graph->setPen(QPen(QBrush(Qt::lightGray), mMainWindow->lineThickness(), Qt::DashLine));
 
-        QCPItemRect *rect = new QCPItemRect(plot);
+        QCPItemRect* rect = new QCPItemRect(plot);
 
         rect->setPen(QPen(QBrush(Qt::lightGray), mMainWindow->lineThickness(), Qt::DashLine));
         rect->setBrush(QColor(0, 0, 0, 8));
@@ -157,8 +130,7 @@ void WideOpenSpeedScoring::prepareDataPlot(
         rect->topLeft->setType(QCPItemPosition::ptAxisRectRatio);
         rect->topLeft->setAxes(plot->xAxis, plot->yValue(DataPlot::Elevation)->axis());
         rect->topLeft->setCoords(
-                    (plot->xValue()->value(dpBottom, mMainWindow->units()) - xMin) / (xMax - xMin),
-                    -0.1);
+            (plot->xValue()->value(dpBottom, mMainWindow->units()) - xMin) / (xMax - xMin), -0.1);
 
         rect->bottomRight->setType(QCPItemPosition::ptAxisRectRatio);
         rect->bottomRight->setAxes(plot->xAxis, plot->yValue(DataPlot::Elevation)->axis());
@@ -166,18 +138,18 @@ void WideOpenSpeedScoring::prepareDataPlot(
     }
 }
 
-void WideOpenSpeedScoring::prepareMapView(
-        MapView *view)
-{
+void WideOpenSpeedScoring::prepareMapView(MapView* view) {
     // Return now if plot empty
-    if (mMainWindow->dataSize() == 0) return;
+    if (mMainWindow->dataSize() == 0)
+        return;
 
     // Distance threshold
     const double threshold = view->metersPerPixel();
 
     // Get start point
     double woProjLat, woProjLon;
-    Geodesic::WGS84().Direct(mEndLatitude, mEndLongitude, mBearing, mLaneLength, woProjLat, woProjLon);
+    Geodesic::WGS84().Direct(mEndLatitude, mEndLongitude, mBearing, mLaneLength, woProjLat,
+                             woProjLon);
 
     // Draw lane center
     QList<QVariant> data;
@@ -198,17 +170,15 @@ void WideOpenSpeedScoring::prepareMapView(
 
     // Draw shading around lane
     QList<QVariant> lt, rt;
-    for (int i = 0; i < data.size(); ++i)
-    {
+    for (int i = 0; i < data.size(); ++i) {
         double lat1 = data[i].toMap()["lat"].toDouble();
         double lon1 = data[i].toMap()["lng"].toDouble();
 
         double ltBearing, rtBearing;
 
-        if (i + 1 < data.size())
-        {
-            double lat2 = data[i+1].toMap()["lat"].toDouble();
-            double lon2 = data[i+1].toMap()["lng"].toDouble();
+        if (i + 1 < data.size()) {
+            double lat2 = data[i + 1].toMap()["lat"].toDouble();
+            double lon2 = data[i + 1].toMap()["lng"].toDouble();
 
             double azi1, azi2;
             Geodesic::WGS84().Inverse(lat1, lon1, lat2, lon2, azi1, azi2);
@@ -216,10 +186,9 @@ void WideOpenSpeedScoring::prepareMapView(
             ltBearing = azi1 + 90;
             rtBearing = azi1 - 90;
         }
-        else if (i - 1 >= 0)
-        {
-            double lat2 = data[i-1].toMap()["lat"].toDouble();
-            double lon2 = data[i-1].toMap()["lng"].toDouble();
+        else if (i - 1 >= 0) {
+            double lat2 = data[i - 1].toMap()["lat"].toDouble();
+            double lon2 = data[i - 1].toMap()["lng"].toDouble();
 
             double azi1, azi2;
             Geodesic::WGS84().Inverse(lat2, lon2, lat1, lon1, azi1, azi2);
@@ -262,14 +231,15 @@ void WideOpenSpeedScoring::prepareMapView(
     // Check if the finish is valid
     success = success && mFinishValid && mFinishPoint.t < dpBottom.t;
 
-    if (mMainWindow->dataSize() == 0)
-    {
+    if (mMainWindow->dataSize() == 0) {
         // Draw long finish line
         double woLeftLat, woLeftLon;
-        Geodesic::WGS84().Direct(mEndLatitude, mEndLongitude, mBearing - 90, mLaneLength / 2, woLeftLat, woLeftLon);
+        Geodesic::WGS84().Direct(mEndLatitude, mEndLongitude, mBearing - 90, mLaneLength / 2,
+                                 woLeftLat, woLeftLon);
 
         double woRightLat, woRightLon;
-        Geodesic::WGS84().Direct(mEndLatitude, mEndLongitude, mBearing + 90, mLaneLength / 2, woRightLat, woRightLon);
+        Geodesic::WGS84().Direct(mEndLatitude, mEndLongitude, mBearing + 90, mLaneLength / 2,
+                                 woRightLat, woRightLon);
 
         data.clear();
 
@@ -287,14 +257,15 @@ void WideOpenSpeedScoring::prepareMapView(
         // Add to map
         view->mapCore()->addPolyline(data);
     }
-    else if (success)
-    {
+    else if (success) {
         // Draw finish line
         double woLeftLat, woLeftLon;
-        Geodesic::WGS84().Direct(mEndLatitude, mEndLongitude, mBearing - 90, mLaneWidth, woLeftLat, woLeftLon);
+        Geodesic::WGS84().Direct(mEndLatitude, mEndLongitude, mBearing - 90, mLaneWidth, woLeftLat,
+                                 woLeftLon);
 
         double woRightLat, woRightLon;
-        Geodesic::WGS84().Direct(mEndLatitude, mEndLongitude, mBearing + 90, mLaneWidth, woRightLat, woRightLon);
+        Geodesic::WGS84().Direct(mEndLatitude, mEndLongitude, mBearing + 90, mLaneWidth, woRightLat,
+                                 woRightLon);
 
         data.clear();
 
@@ -312,14 +283,15 @@ void WideOpenSpeedScoring::prepareMapView(
         // Add to map
         view->mapCore()->addPolyline(data);
     }
-    else
-    {
+    else {
         // Draw first line of 'X'
         double woLeftLat, woLeftLon;
         double woRightLat, woRightLon;
 
-        Geodesic::WGS84().Direct(mEndLatitude, mEndLongitude, mBearing + 45, mLaneWidth, woLeftLat, woLeftLon);
-        Geodesic::WGS84().Direct(mEndLatitude, mEndLongitude, mBearing + 225, mLaneWidth, woRightLat, woRightLon);
+        Geodesic::WGS84().Direct(mEndLatitude, mEndLongitude, mBearing + 45, mLaneWidth, woLeftLat,
+                                 woLeftLon);
+        Geodesic::WGS84().Direct(mEndLatitude, mEndLongitude, mBearing + 225, mLaneWidth,
+                                 woRightLat, woRightLon);
 
         data.clear();
 
@@ -338,8 +310,10 @@ void WideOpenSpeedScoring::prepareMapView(
         view->mapCore()->addPolyline(data);
 
         // Draw second line of 'X'
-        Geodesic::WGS84().Direct(mEndLatitude, mEndLongitude, mBearing - 45, mLaneWidth, woLeftLat, woLeftLon);
-        Geodesic::WGS84().Direct(mEndLatitude, mEndLongitude, mBearing - 225, mLaneWidth, woRightLat, woRightLon);
+        Geodesic::WGS84().Direct(mEndLatitude, mEndLongitude, mBearing - 45, mLaneWidth, woLeftLat,
+                                 woLeftLon);
+        Geodesic::WGS84().Direct(mEndLatitude, mEndLongitude, mBearing - 225, mLaneWidth,
+                                 woRightLat, woRightLon);
 
         data.clear();
 
@@ -358,24 +332,17 @@ void WideOpenSpeedScoring::prepareMapView(
     }
 }
 
-void WideOpenSpeedScoring::splitLine(
-        QList<QVariant> &data,
-        double startLat,
-        double startLon,
-        double endLat,
-        double endLon,
-        double threshold,
-        int depth)
-{
+void WideOpenSpeedScoring::splitLine(QList<QVariant>& data, double startLat, double startLon,
+                                     double endLat, double endLon, double threshold, int depth) {
     GeodesicLine l = Geodesic::WGS84().InverseLine(startLat, startLon, endLat, endLon);
     double midLat, midLon;
     l.Position(l.Distance() / 2, midLat, midLon);
 
     double dist;
-    Geodesic::WGS84().Inverse((startLat + endLat) / 2, (startLon + endLon) / 2, midLat, midLon, dist);
+    Geodesic::WGS84().Inverse((startLat + endLat) / 2, (startLon + endLon) / 2, midLat, midLon,
+                              dist);
 
-    if (dist > threshold && depth < MAX_SPLIT_DEPTH)
-    {
+    if (dist > threshold && depth < MAX_SPLIT_DEPTH) {
         splitLine(data, startLat, startLon, midLat, midLon, threshold, depth + 1);
 
         QMap<QString, QVariant> val;
@@ -387,71 +354,57 @@ void WideOpenSpeedScoring::splitLine(
     }
 }
 
-bool WideOpenSpeedScoring::getWindowBounds(
-        const MainWindow::DataPoints &result,
-        DataPoint &dpBottom)
-{
+bool WideOpenSpeedScoring::getWindowBounds(const MainWindow::DataPoints& result,
+                                           DataPoint& dpBottom) {
     bool foundBottom = false;
     int bottom;
 
-    for (int i = result.size() - 1; i >= 0; --i)
-    {
-        const DataPoint &dp = result[i];
+    for (int i = result.size() - 1; i >= 0; --i) {
+        const DataPoint& dp = result[i];
 
-        if (dp.z < mBottom)
-        {
+        if (dp.z < mBottom) {
             bottom = i;
             foundBottom = true;
         }
 
-        if (dp.t < 0) break;
+        if (dp.t < 0)
+            break;
     }
 
-    if (foundBottom)
-    {
+    if (foundBottom) {
         // Calculate bottom of window
-        const DataPoint &dp1 = result[bottom - 1];
-        const DataPoint &dp2 = result[bottom];
+        const DataPoint& dp1 = result[bottom - 1];
+        const DataPoint& dp2 = result[bottom];
         dpBottom = DataPoint::interpolate(dp1, dp2, (mBottom - dp1.z) / (dp2.z - dp1.z));
 
         return true;
     }
-    else
-    {
+    else {
         return false;
     }
 }
 
-bool WideOpenSpeedScoring::updateReference(
-        double lat,
-        double lon)
-{
-    if (mMainWindow->mapMode() == MainWindow::SetStart)
-    {
+bool WideOpenSpeedScoring::updateReference(double lat, double lon) {
+    if (mMainWindow->mapMode() == MainWindow::SetStart) {
         double azi1, azi2;
         Geodesic::WGS84().Inverse(mEndLatitude, mEndLongitude, lat, lon, azi1, azi2);
         setBearing(azi1);
         return true;
     }
-    else if (mMainWindow->mapMode() == MainWindow::SetEnd)
-    {
+    else if (mMainWindow->mapMode() == MainWindow::SetEnd) {
         setEnd(lat, lon);
         return true;
     }
-    else
-    {
+    else {
         return false;
     }
 }
 
-void WideOpenSpeedScoring::invalidateFinish()
-{
+void WideOpenSpeedScoring::invalidateFinish() {
     mFinishValid = false;
 }
 
-void WideOpenSpeedScoring::setFinishPoint(
-        const DataPoint &dp)
-{
+void WideOpenSpeedScoring::setFinishPoint(const DataPoint& dp) {
     mFinishValid = true;
     mFinishPoint = dp;
 }

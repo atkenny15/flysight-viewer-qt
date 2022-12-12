@@ -28,68 +28,51 @@
 #define TIME_DELTA 0.005
 #define SQRT_2 1.41421356237
 
-SpeedScoring::SpeedScoring(
-        MainWindow *mainWindow):
-    ScoringMethod(mainWindow),
-    mMainWindow(mainWindow),
-    mFromExit(2255.52),
-    mWindowBottom(1706.88),
-    mValidationWindow(1005.84)
-{
-
+SpeedScoring::SpeedScoring(MainWindow* mainWindow) :
+    ScoringMethod(mainWindow), mMainWindow(mainWindow), mFromExit(2255.52), mWindowBottom(1706.88),
+    mValidationWindow(1005.84) {
 }
 
-void SpeedScoring::setFromExit(
-        double fromExit)
-{
+void SpeedScoring::setFromExit(double fromExit) {
     mFromExit = fromExit;
     emit scoringChanged();
 }
 
-void SpeedScoring::setWindowBottom(
-        double windowBottom)
-{
+void SpeedScoring::setWindowBottom(double windowBottom) {
     mWindowBottom = windowBottom;
     emit scoringChanged();
 }
 
-void SpeedScoring::setValidationWindow(
-        double validationWindow)
-{
+void SpeedScoring::setValidationWindow(double validationWindow) {
     mValidationWindow = validationWindow;
     emit scoringChanged();
 }
 
-double SpeedScoring::score(
-        const MainWindow::DataPoints &result)
-{
-    if (mMainWindow->dataSize() == 0) return 0;
+double SpeedScoring::score(const MainWindow::DataPoints& result) {
+    if (mMainWindow->dataSize() == 0)
+        return 0;
 
     // Get exit
     DataPoint dpExit = mMainWindow->interpolateDataT(0);
 
     DataPoint dpBottom, dpTop;
-    if (getWindowBounds(result, dpBottom, dpTop, dpExit))
-    {
+    if (getWindowBounds(result, dpBottom, dpTop, dpExit)) {
         return (dpTop.z - dpBottom.z) / (dpBottom.t - dpTop.t);
     }
 
     return 0;
 }
 
-QString SpeedScoring::scoreAsText(
-        double score)
-{
-    return (mMainWindow->units() == PlotValue::Metric) ?
-                QString::number(score * MPS_TO_KMH) + QString(" km/h"):
-                QString::number(score * MPS_TO_MPH) + QString(" mph");
+QString SpeedScoring::scoreAsText(double score) {
+    return (mMainWindow->units() == PlotValue::Metric)
+               ? QString::number(score * MPS_TO_KMH) + QString(" km/h")
+               : QString::number(score * MPS_TO_MPH) + QString(" mph");
 }
 
-void SpeedScoring::prepareDataPlot(
-        DataPlot *plot)
-{
+void SpeedScoring::prepareDataPlot(DataPlot* plot) {
     // Return now if plot empty
-    if (mMainWindow->dataSize() == 0) return;
+    if (mMainWindow->dataSize() == 0)
+        return;
 
     // Get exit
     DataPoint dpExit = mMainWindow->interpolateDataT(0);
@@ -97,34 +80,31 @@ void SpeedScoring::prepareDataPlot(
     DataPoint dpBottom, dpTop;
     bool success;
 
-    switch (mMainWindow->windowMode())
-    {
-    case MainWindow::Actual:
-        success = getWindowBounds(mMainWindow->data(), dpBottom, dpTop, dpExit);
-        break;
-    case MainWindow::Optimal:
-        success = getWindowBounds(mMainWindow->optimal(), dpBottom, dpTop, dpExit);
-        break;
+    switch (mMainWindow->windowMode()) {
+        case MainWindow::Actual:
+            success = getWindowBounds(mMainWindow->data(), dpBottom, dpTop, dpExit);
+            break;
+        case MainWindow::Optimal:
+            success = getWindowBounds(mMainWindow->optimal(), dpBottom, dpTop, dpExit);
+            break;
     }
 
     // Add shading for scoring window
-    if (success && plot->yValue(DataPlot::Elevation)->visible())
-    {
+    if (success && plot->yValue(DataPlot::Elevation)->visible()) {
         DataPoint dpLower = mMainWindow->interpolateDataT(mMainWindow->rangeLower());
         DataPoint dpUpper = mMainWindow->interpolateDataT(mMainWindow->rangeUpper());
 
         const double xMin = plot->xValue()->value(dpLower, mMainWindow->units());
         const double xMax = plot->xValue()->value(dpUpper, mMainWindow->units());
 
-        QVector< double > xElev, yElev;
+        QVector<double> xElev, yElev;
 
         xElev << xMin << xMax;
         yElev << plot->yValue(DataPlot::Elevation)->value(dpTop, mMainWindow->units())
               << plot->yValue(DataPlot::Elevation)->value(dpTop, mMainWindow->units());
 
-        QCPGraph *graph = plot->addGraph(
-                    plot->axisRect()->axis(QCPAxis::atBottom),
-                    plot->yValue(DataPlot::Elevation)->axis());
+        QCPGraph* graph = plot->addGraph(plot->axisRect()->axis(QCPAxis::atBottom),
+                                         plot->yValue(DataPlot::Elevation)->axis());
         graph->setData(xElev, yElev);
         graph->setPen(QPen(QBrush(Qt::lightGray), mMainWindow->lineThickness(), Qt::DashLine));
 
@@ -132,13 +112,12 @@ void SpeedScoring::prepareDataPlot(
         yElev << plot->yValue(DataPlot::Elevation)->value(dpBottom, mMainWindow->units())
               << plot->yValue(DataPlot::Elevation)->value(dpBottom, mMainWindow->units());
 
-        graph = plot->addGraph(
-                    plot->axisRect()->axis(QCPAxis::atBottom),
-                    plot->yValue(DataPlot::Elevation)->axis());
+        graph = plot->addGraph(plot->axisRect()->axis(QCPAxis::atBottom),
+                               plot->yValue(DataPlot::Elevation)->axis());
         graph->setData(xElev, yElev);
         graph->setPen(QPen(QBrush(Qt::lightGray), mMainWindow->lineThickness(), Qt::DashLine));
 
-        QCPItemRect *rect = new QCPItemRect(plot);
+        QCPItemRect* rect = new QCPItemRect(plot);
 
         rect->setPen(QPen(QBrush(Qt::lightGray), mMainWindow->lineThickness(), Qt::DashLine));
         rect->setBrush(QColor(0, 0, 0, 8));
@@ -150,8 +129,7 @@ void SpeedScoring::prepareDataPlot(
         rect->bottomRight->setType(QCPItemPosition::ptAxisRectRatio);
         rect->bottomRight->setAxes(plot->xAxis, plot->yValue(DataPlot::Elevation)->axis());
         rect->bottomRight->setCoords(
-                    (plot->xValue()->value(dpTop, mMainWindow->units()) - xMin) / (xMax - xMin),
-                    1.1);
+            (plot->xValue()->value(dpTop, mMainWindow->units()) - xMin) / (xMax - xMin), 1.1);
 
         rect = new QCPItemRect(plot);
 
@@ -161,8 +139,7 @@ void SpeedScoring::prepareDataPlot(
         rect->topLeft->setType(QCPItemPosition::ptAxisRectRatio);
         rect->topLeft->setAxes(plot->xAxis, plot->yValue(DataPlot::Elevation)->axis());
         rect->topLeft->setCoords(
-                    (plot->xValue()->value(dpBottom, mMainWindow->units()) - xMin) / (xMax - xMin),
-                    -0.1);
+            (plot->xValue()->value(dpBottom, mMainWindow->units()) - xMin) / (xMax - xMin), -0.1);
 
         rect->bottomRight->setType(QCPItemPosition::ptAxisRectRatio);
         rect->bottomRight->setAxes(plot->xAxis, plot->yValue(DataPlot::Elevation)->axis());
@@ -170,43 +147,42 @@ void SpeedScoring::prepareDataPlot(
     }
 }
 
-bool SpeedScoring::getWindowBounds(
-        const MainWindow::DataPoints &result,
-        DataPoint &dpBottom,
-        DataPoint &dpTop,
-        const DataPoint &dpExit)
-{
+bool SpeedScoring::getWindowBounds(const MainWindow::DataPoints& result, DataPoint& dpBottom,
+                                   DataPoint& dpTop, const DataPoint& dpExit) {
     bool found = false;
     int iStart = result.size() - 1;
     double maxScore = 0;
 
-    for (int iEnd = result.size() - 1; iEnd >= 0; --iEnd)
-    {
+    for (int iEnd = result.size() - 1; iEnd >= 0; --iEnd) {
         // Get end point
-        const DataPoint &dpEnd = result[iEnd];
+        const DataPoint& dpEnd = result[iEnd];
         const double tStart = dpEnd.t - 3;
 
         // Move start point back
-        for (; iStart >= 0; --iStart)
-        {
-            const DataPoint &dpStart = result[iStart];
-            if (dpStart.t < tStart + TIME_DELTA) break;
+        for (; iStart >= 0; --iStart) {
+            const DataPoint& dpStart = result[iStart];
+            if (dpStart.t < tStart + TIME_DELTA)
+                break;
         }
 
         // If no start point is found
-        if (iStart < 0) break;
+        if (iStart < 0)
+            break;
 
         // Check window conditions
-        const DataPoint &dpStart = result[iStart];
-        if (dpStart.t < 0) break;
-        if (dpEnd.z < dpExit.z - mFromExit) continue;
-        if (dpEnd.z < mWindowBottom) continue;
-        if (dpStart.t < tStart - TIME_DELTA) continue;
+        const DataPoint& dpStart = result[iStart];
+        if (dpStart.t < 0)
+            break;
+        if (dpEnd.z < dpExit.z - mFromExit)
+            continue;
+        if (dpEnd.z < mWindowBottom)
+            continue;
+        if (dpStart.t < tStart - TIME_DELTA)
+            continue;
 
         // Calculate score
         const double thisScore = (dpStart.z - dpEnd.z) / (dpEnd.t - dpStart.t);
-        if (thisScore > maxScore)
-        {
+        if (thisScore > maxScore) {
             dpBottom = dpEnd;
             dpTop = dpStart;
             maxScore = thisScore;
@@ -217,31 +193,29 @@ bool SpeedScoring::getWindowBounds(
     return found;
 }
 
-bool SpeedScoring::getAccuracy(
-        const MainWindow::DataPoints &result,
-        double &scoreAccuracy,
-        const DataPoint &dpExit)
-{
+bool SpeedScoring::getAccuracy(const MainWindow::DataPoints& result, double& scoreAccuracy,
+                               const DataPoint& dpExit) {
     bool found = false;
 
-    for (int i = result.size() - 1; i >= 0; --i)
-    {
+    for (int i = result.size() - 1; i >= 0; --i) {
         // Get end point
-        const DataPoint &dp = result[i];
+        const DataPoint& dp = result[i];
 
         // Get validation window
         const double zBottom = qMax(dpExit.z - mFromExit, mWindowBottom);
         const double zTop = zBottom + mValidationWindow;
 
         // Check window conditions
-        if (dp.t < 0) break;
-        if (dp.z < zBottom) continue;
-        if (dp.z > zTop) continue;
+        if (dp.t < 0)
+            break;
+        if (dp.z < zBottom)
+            continue;
+        if (dp.z > zTop)
+            continue;
 
         // Calculate accuracy
         double sa = 1.960 * SQRT_2 * dp.vAcc / 3.0;
-        if ((!found) || (sa > scoreAccuracy))
-        {
+        if ((!found) || (sa > scoreAccuracy)) {
             scoreAccuracy = sa;
         }
 

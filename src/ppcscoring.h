@@ -28,14 +28,11 @@
 
 class MainWindow;
 
-class PPCScoring : public ScoringMethod
-{
+class PPCScoring : public ScoringMethod {
 public:
-    typedef enum {
-        Time, Distance, Speed
-    } Mode;
+    typedef enum { Time, Distance, Speed } Mode;
 
-    PPCScoring(MainWindow *mainWindow);
+    PPCScoring(MainWindow* mainWindow);
 
     Mode mode() const { return mMode; }
     void setMode(Mode mode);
@@ -51,16 +48,16 @@ public:
     double endLongitude(void) const { return mEndLongitude; }
     void setEnd(double endLatitude, double endLongitude);
 
-    double score(const MainWindow::DataPoints &result);
+    double score(const MainWindow::DataPoints& result);
     QString scoreAsText(double score);
 
-    void prepareDataPlot(DataPlot *plot);
-    void prepareMapView(MapView *view);
+    void prepareDataPlot(DataPlot* plot);
+    void prepareMapView(MapView* view);
 
     bool updateReference(double lat, double lon);
 
-    bool getWindowBounds(const MainWindow::DataPoints &result,
-                         DataPoint &dpBottom, DataPoint &dpTop);
+    bool getWindowBounds(const MainWindow::DataPoints& result, DataPoint& dpBottom,
+                         DataPoint& dpTop);
 
     void readSettings();
     void writeSettings();
@@ -68,21 +65,19 @@ public:
     void optimize() { ScoringMethod::optimize(mMainWindow, mWindowBottom); }
 
 private:
-    MainWindow *mMainWindow;
+    MainWindow* mMainWindow;
 
-    Mode        mMode;
-    double      mWindowTop;
-    double      mWindowBottom;
+    Mode mMode;
+    double mWindowTop;
+    double mWindowBottom;
 
-    bool        mDrawLane;
-    double      mEndLatitude;
-    double      mEndLongitude;
-    double      mLaneWidth;
+    bool mDrawLane;
+    double mEndLatitude;
+    double mEndLongitude;
+    double mLaneWidth;
 
-    void splitLine(QList<QVariant> &data,
-                   double startLat, double startLon,
-                   double endLat, double endLon,
-                   double threshold, int depth);
+    void splitLine(QList<QVariant>& data, double startLat, double startLon, double endLat,
+                   double endLon, double threshold, int depth);
 
 signals:
 

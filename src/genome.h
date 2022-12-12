@@ -24,25 +24,21 @@
 #ifndef GENOME_H
 #define GENOME_H
 
-#include <QVector>
-
 #include "datapoint.h"
 #include "mainwindow.h"
+#include <QVector>
 
-class Genome:
-        public QVector< double >
-{
+class Genome : public QVector<double> {
 public:
     Genome();
-    Genome(const QVector< double > &rhs);
-    Genome(const Genome &p1, const Genome &p2, int k);
+    Genome(const QVector<double>& rhs);
+    Genome(const Genome& p1, const Genome& p2, int k);
     Genome(int genomeSize, int k, double minLift, double maxLift);
 
     void mutate(int k, int kMin, double minLift, double maxLift);
     void truncate(int k);
-    MainWindow::DataPoints simulate(double h, double a, double c,
-                                  double planformArea, double mass,
-                                  const DataPoint &dp0, double windowBottom);
+    MainWindow::DataPoints simulate(double h, double a, double c, double planformArea, double mass,
+                                    const DataPoint& dp0, double windowBottom);
 
 private:
     static double dtheta_dt(double theta, double v, double x, double y, double lift,

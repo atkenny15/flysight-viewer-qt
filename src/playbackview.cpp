@@ -22,22 +22,16 @@
 ****************************************************************************/
 
 #include "playbackview.h"
-#include "ui_playbackview.h"
-
-#include <QTimer>
 
 #include "common.h"
 #include "mainwindow.h"
+#include "ui_playbackview.h"
+#include <QTimer>
 
-#define INTERVAL 250    // Timer interval in ms
+#define INTERVAL 250 // Timer interval in ms
 
-PlaybackView::PlaybackView(QWidget *parent) :
-    QWidget(parent),
-    ui(new Ui::PlaybackView),
-    mMainWindow(0),
-    mBusy(false),
-    mState(Paused)
-{
+PlaybackView::PlaybackView(QWidget* parent) :
+    QWidget(parent), ui(new Ui::PlaybackView), mMainWindow(0), mBusy(false), mState(Paused) {
     ui->setupUi(this);
 
     ui->playButton->setEnabled(false);
@@ -58,75 +52,67 @@ PlaybackView::PlaybackView(QWidget *parent) :
     connect(mTimer, SIGNAL(timeout()), this, SLOT(tick()));
 }
 
-PlaybackView::~PlaybackView()
-{
+PlaybackView::~PlaybackView() {
     delete ui;
 }
 
-QSize PlaybackView::sizeHint() const
-{
+QSize PlaybackView::sizeHint() const {
     // Keeps windows from being initialized as very short
     return QSize(300, 75);
 }
 
-void PlaybackView::play()
-{
-    switch(mState)
-    {
-    case Paused:
-        ui->playButton->setIcon(style()->standardIcon(QStyle::SP_MediaPause));
-        mTimer->start();
-        mState = Playing;
-        break;
-    default:
-        ui->playButton->setIcon(style()->standardIcon(QStyle::SP_MediaPlay));
-        mTimer->stop();
-        mState = Paused;
-        break;
+void PlaybackView::play() {
+    switch (mState) {
+        case Paused:
+            ui->playButton->setIcon(style()->standardIcon(QStyle::SP_MediaPause));
+            mTimer->start();
+            mState = Playing;
+            break;
+        default:
+            ui->playButton->setIcon(style()->standardIcon(QStyle::SP_MediaPlay));
+            mTimer->stop();
+            mState = Paused;
+            break;
     }
 }
 
-void PlaybackView::tick()
-{
+void PlaybackView::tick() {
     // Return now if plot empty
-    if (mMainWindow->dataSize() == 0) return;
+    if (mMainWindow->dataSize() == 0)
+        return;
 
-    const DataPoint &dpEnd = mMainWindow->dataPoint(mMainWindow->dataSize() - 1);
+    const DataPoint& dpEnd = mMainWindow->dataPoint(mMainWindow->dataSize() - 1);
 
-    if (mMainWindow->rangeUpper() == dpEnd.t)
-    {
+    if (mMainWindow->rangeUpper() == dpEnd.t) {
         // Stop playback
         ui->playButton->setIcon(style()->standardIcon(QStyle::SP_MediaPlay));
         mTimer->stop();
         mState = Paused;
     }
-    else
-    {
+    else {
         double lower = mMainWindow->rangeLower() + INTERVAL / 1000.;
         double upper = mMainWindow->rangeUpper() + INTERVAL / 1000.;
 
-        if (upper > dpEnd.t)
-        {
+        if (upper > dpEnd.t) {
             lower -= upper - dpEnd.t;
             upper = dpEnd.t;
         }
 
         // Round to nearest interval
-        lower = (int) (lower * 1000 / INTERVAL) * INTERVAL / 1000.;
-        upper = (int) (upper * 1000 / INTERVAL) * INTERVAL / 1000.;
+        lower = (int)(lower * 1000 / INTERVAL) * INTERVAL / 1000.;
+        upper = (int)(upper * 1000 / INTERVAL) * INTERVAL / 1000.;
 
         // Change window position
         mMainWindow->setRange(lower, upper);
     }
 }
 
-void PlaybackView::setPosition(int position)
-{
+void PlaybackView::setPosition(int position) {
     // Return now if plot empty
-    if (mMainWindow->dataSize() == 0) return;
+    if (mMainWindow->dataSize() == 0)
+        return;
 
-    if (!mBusy)
-    {
+    if (!mBusy) {
         mBusy = true;
 
         // Stop playback
@@ -139,12 +125,11 @@ void PlaybackView::setPosition(int position)
         const double upper = mMainWindow->rangeUpper() + INTERVAL / 1000.;
 
         // Get data range
-        const DataPoint &dpStart = mMainWindow->dataPoint(0);
+        const DataPoint& dpStart = mMainWindow->dataPoint(0);
 
         // Change window position
-        mMainWindow->setRange(
-                    dpStart.t + position / 1000.,
-                    dpStart.t + position / 1000. + upper - lower);
+        mMainWindow->setRange(dpStart.t + position / 1000.,
+                              dpStart.t + position / 1000. + upper - lower);
 
         // Update text label
         ui->timeLabel->setText(QString("%1 s").arg(lower, 0, 'f', 3));
@@ -153,12 +138,11 @@ void PlaybackView::setPosition(int position)
     }
 }
 
-void PlaybackView::updateView()
-{
-    if (mBusy || !mMainWindow) return;
+void PlaybackView::updateView() {
+    if (mBusy || !mMainWindow)
+        return;
 
-    if (mMainWindow->dataSize() > 0)
-    {
+    if (mMainWindow->dataSize() > 0) {
         mBusy = true;
 
         // Enable controls
@@ -170,8 +154,8 @@ void PlaybackView::updateView()
         const double upper = mMainWindow->rangeUpper() + INTERVAL / 1000.;
 
         // Get data range
-        const DataPoint &dpStart = mMainWindow->dataPoint(0);
-        const DataPoint &dpEnd = mMainWindow->dataPoint(mMainWindow->dataSize() - 1);
+        const DataPoint& dpStart = mMainWindow->dataPoint(0);
+        const DataPoint& dpEnd = mMainWindow->dataPoint(mMainWindow->dataSize() - 1);
 
         // Update slider range
         const int duration = ((dpEnd.t - dpStart.t) - (upper - lower)) * 1000;
@@ -186,8 +170,7 @@ void PlaybackView::updateView()
 
         mBusy = false;
     }
-    else
-    {
+    else {
         // Disable controls
         ui->playButton->setEnabled(false);
         ui->positionSlider->setEnabled(false);

@@ -24,12 +24,11 @@
 #ifndef CONFIGDIALOG_H
 #define CONFIGDIALOG_H
 
+#include "mainwindow.h"
+#include "plotvalue.h"
 #include <QColor>
 #include <QDialog>
 #include <QListWidget>
-
-#include "mainwindow.h"
-#include "plotvalue.h"
 
 namespace Ui {
 class ConfigDialog;
@@ -37,12 +36,11 @@ class ConfigDialog;
 
 class MainWindow;
 
-class ConfigDialog : public QDialog
-{
+class ConfigDialog : public QDialog {
     Q_OBJECT
 
 public:
-    explicit ConfigDialog(MainWindow *mainWindow);
+    explicit ConfigDialog(MainWindow* mainWindow);
     ~ConfigDialog();
 
     void setUnits(PlotValue::Units units);
@@ -101,13 +99,13 @@ public:
     QString databasePath() const;
 
 private:
-    Ui::ConfigDialog *ui;
+    Ui::ConfigDialog* ui;
 
 private slots:
     void on_browseButton_clicked();
     void on_defaultsButton_clicked();
 
-    void changePage(QListWidgetItem *current, QListWidgetItem *previous);
+    void changePage(QListWidgetItem* current, QListWidgetItem* previous);
     void updatePlots();
     void updateReference();
 };

@@ -27,29 +27,28 @@
 #include <QWidget>
 
 namespace Ui {
-    class PPCForm;
+class PPCForm;
 }
 
 class MainWindow;
 
-class PPCForm : public QWidget
-{
+class PPCForm : public QWidget {
     Q_OBJECT
 
 public:
-    explicit PPCForm(QWidget *parent = 0);
+    explicit PPCForm(QWidget* parent = 0);
     ~PPCForm();
 
     virtual QSize sizeHint() const;
 
-    void setMainWindow(MainWindow *mainWindow);
+    void setMainWindow(MainWindow* mainWindow);
 
 protected:
-    virtual void keyPressEvent(QKeyEvent *);
+    virtual void keyPressEvent(QKeyEvent*);
 
 private:
-    Ui::PPCForm *ui;
-    MainWindow  *mMainWindow;
+    Ui::PPCForm* ui;
+    MainWindow* mMainWindow;
 
 public slots:
     void updateView();
@@ -69,6 +68,5 @@ private slots:
 
     void onPpcButtonClicked();
 };
-
 
 #endif // PPCFORM_H

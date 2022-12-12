@@ -3,12 +3,11 @@
 
 #include <QComboBox>
 
-class ColorComboBox : public QComboBox
-{
+class ColorComboBox : public QComboBox {
     Q_OBJECT
 
 public:
-    explicit ColorComboBox(QWidget *parent = 0);
+    explicit ColorComboBox(QWidget* parent = 0);
 
     QSize sizeHint() const override;
     QSize minimumSizeHint() const override;

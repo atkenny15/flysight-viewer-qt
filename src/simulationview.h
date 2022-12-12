@@ -1,12 +1,11 @@
 #ifndef SIMULATIONVIEW_H
 #define SIMULATIONVIEW_H
 
-#include <QTemporaryFile>
-#include <QWidget>
-
 #include "config.h"
 #include "tone.h"
 #include "ubx.h"
+#include <QTemporaryFile>
+#include <QWidget>
 
 namespace Ui {
 class SimulationView;
@@ -18,35 +17,34 @@ class VlcInstance;
 class VlcMedia;
 class VlcMediaPlayer;
 
-class SimulationView : public QWidget
-{
+class SimulationView : public QWidget {
     Q_OBJECT
 
 public:
-    explicit SimulationView(QWidget *parent = 0);
+    explicit SimulationView(QWidget* parent = 0);
     ~SimulationView();
 
     virtual QSize sizeHint() const;
 
-    void setMainWindow(MainWindow *mainWindow);
+    void setMainWindow(MainWindow* mainWindow);
 
 protected:
-    void showEvent(QShowEvent *event);
-    void hideEvent(QHideEvent *event);
+    void showEvent(QShowEvent* event);
+    void hideEvent(QHideEvent* event);
 
 private:
-    Ui::SimulationView *ui;
-    MainWindow         *mMainWindow;
+    Ui::SimulationView* ui;
+    MainWindow* mMainWindow;
 
-    VlcInstance        *mInstance;
-    VlcMedia           *mMedia;
-    VlcMediaPlayer     *mPlayer;
+    VlcInstance* mInstance;
+    VlcMedia* mMedia;
+    VlcMediaPlayer* mPlayer;
 
-    bool               mBusy;
+    bool mBusy;
 
-    QTemporaryFile     *mAudioFile;
+    QTemporaryFile* mAudioFile;
 
-    void setMedia(const QString &fileName);
+    void setMedia(const QString& fileName);
 
 public slots:
     void play();

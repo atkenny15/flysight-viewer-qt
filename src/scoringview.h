@@ -27,7 +27,7 @@
 #include <QWidget>
 
 namespace Ui {
-    class ScoringView;
+class ScoringView;
 }
 
 class DataPlot;
@@ -41,26 +41,25 @@ class WideOpenSpeedForm;
 class FlareForm;
 class AcroForm;
 
-class ScoringView : public QWidget
-{
+class ScoringView : public QWidget {
     Q_OBJECT
 
 public:
-    explicit ScoringView(QWidget *parent = 0);
+    explicit ScoringView(QWidget* parent = 0);
     ~ScoringView();
 
-    void setMainWindow(MainWindow *mainWindow);
+    void setMainWindow(MainWindow* mainWindow);
 
 private:
-    Ui::ScoringView      *ui;
-    MainWindow           *mMainWindow;
-    PPCForm              *mPPCForm;
-    SpeedForm            *mSpeedForm;
-    PerformanceForm      *mPerformanceForm;
-    WideOpenSpeedForm    *mWideOpenSpeedForm;
-    WideOpenDistanceForm *mWideOpenDistanceForm;
-    FlareForm            *mFlareForm;
-    AcroForm             *mAcroForm;
+    Ui::ScoringView* ui;
+    MainWindow* mMainWindow;
+    PPCForm* mPPCForm;
+    SpeedForm* mSpeedForm;
+    PerformanceForm* mPerformanceForm;
+    WideOpenSpeedForm* mWideOpenSpeedForm;
+    WideOpenDistanceForm* mWideOpenDistanceForm;
+    FlareForm* mFlareForm;
+    AcroForm* mAcroForm;
 
 public slots:
     void updateView();

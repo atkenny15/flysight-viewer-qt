@@ -1,32 +1,26 @@
 #include "colorcombobox.h"
 
-ColorComboBox::ColorComboBox(QWidget *parent) : QComboBox(parent)
-{
+ColorComboBox::ColorComboBox(QWidget* parent) : QComboBox(parent) {
     populateList();
 }
 
-QSize ColorComboBox::sizeHint() const
-{
+QSize ColorComboBox::sizeHint() const {
     return minimumSizeHint();
 }
 
-QSize ColorComboBox::minimumSizeHint() const
-{
+QSize ColorComboBox::minimumSizeHint() const {
     return QSize(0, QComboBox::minimumSizeHint().height());
 }
 
-QColor ColorComboBox::color() const
-{
+QColor ColorComboBox::color() const {
     return qvariant_cast<QColor>(itemData(currentIndex(), Qt::DecorationRole));
 }
 
-void ColorComboBox::setColor(QColor color)
-{
+void ColorComboBox::setColor(QColor color) {
     setCurrentIndex(findData(color, int(Qt::DecorationRole)));
 }
 
-void ColorComboBox::populateList()
-{
+void ColorComboBox::populateList() {
     QStringList colorNames = QColor::colorNames();
 
     for (int i = 0; i < colorNames.size(); ++i) {

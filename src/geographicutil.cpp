@@ -35,27 +35,14 @@ using namespace GeographicLib;
 // From https://sourceforge.net/p/geographiclib/discussion/1026621/thread/21aaff9f/#8a93
 // See http://arxiv.org/pdf/1102.1215v1.pdf
 
-void GeographicUtil::intercept(
-        double lata1,
-        double lona1,
-        double lata2,
-        double lona2,
-        double latb1,
-        double lonb1,
-        double &lat0,
-        double &lon0)
-{
+void GeographicUtil::intercept(double lata1, double lona1, double lata2, double lona2, double latb1,
+                               double lonb1, double& lat0, double& lon0) {
     class vector3 {
     public:
         double _x, _y, _z;
-        vector3(double x, double y, double z = 1) throw()
-            : _x(x)
-            , _y(y)
-            , _z(z) {}
+        vector3(double x, double y, double z = 1) throw() : _x(x), _y(y), _z(z) {}
         vector3 cross(const vector3& b) const throw() {
-            return vector3(_y * b._z - _z * b._y,
-                _z * b._x - _x * b._z,
-                _x * b._y - _y * b._x);
+            return vector3(_y * b._z - _z * b._y, _z * b._x - _x * b._z, _x * b._y - _y * b._x);
         }
         void norm() throw() {
             _x /= _z;
@@ -71,8 +58,7 @@ void GeographicUtil::intercept(
     lat0 = (lata1 + lata2) / 2;
     lon0 = (lona1 + lona2) / 2;
 
-    for (int i = 0; i < 10; ++i)
-    {
+    for (int i = 0; i < 10; ++i) {
         double xa1, ya1, xa2, ya2;
         double xb1, yb1;
 

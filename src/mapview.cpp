@@ -23,24 +23,18 @@
 
 #include "mapview.h"
 
+#include "common.h"
+#include "mainwindow.h"
+#include "mapcore.h"
+#include "secrets.h"
 #include <QList>
 #include <QMap>
 #include <QVariant>
 #include <QWebChannel>
 
-#include "common.h"
-#include "mainwindow.h"
-#include "mapcore.h"
-#include "secrets.h"
-
-MapView::MapView(QWidget *parent) :
-    QWebEngineView(parent),
-    mMainWindow(0),
-    mDragging(false)
-{
+MapView::MapView(QWidget* parent) : QWebEngineView(parent), mMainWindow(0), mDragging(false) {
     QFile file(":/html/mapview.html");
-    if (file.open(QIODevice::ReadOnly))
-    {
+    if (file.open(QIODevice::ReadOnly)) {
         QString html = file.readAll();
         html.replace("GOOGLE_MAPS_API_KEY", GOOGLE_MAPS_API_KEY);
         setHtml(html);
@@ -57,60 +51,44 @@ MapView::MapView(QWidget *parent) :
     page()->setWebChannel(mWebChannel);
 }
 
-QSize MapView::sizeHint() const
-{
+QSize MapView::sizeHint() const {
     // Keeps windows from being initialized as very short
     return QSize(175, 175);
 }
 
-void MapView::mouseDown(
-        QMap<QString, QVariant> latLng)
-{
-    if (updateReference(latLng))
-    {
+void MapView::mouseDown(QMap<QString, QVariant> latLng) {
+    if (updateReference(latLng)) {
         mMainWindow->clearMark();
         mDragging = true;
     }
 }
 
-void MapView::mouseUp(
-        QMap<QString, QVariant> latLng)
-{
-    if (mDragging)
-    {
+void MapView::mouseUp(QMap<QString, QVariant> latLng) {
+    if (mDragging) {
         updateMarker(latLng);
         mMainWindow->setMapMode(MainWindow::Default);
         mDragging = false;
     }
 }
 
-void MapView::mouseOver(
-        QMap<QString, QVariant> latLng)
-{
+void MapView::mouseOver(QMap<QString, QVariant> latLng) {
     mouseMove(latLng);
 }
 
-void MapView::mouseOut()
-{
+void MapView::mouseOut() {
     mMainWindow->clearMark();
 }
 
-void MapView::mouseMove(
-        QMap<QString, QVariant> latLng)
-{
-    if (mDragging)
-    {
+void MapView::mouseMove(QMap<QString, QVariant> latLng) {
+    if (mDragging) {
         updateReference(latLng);
     }
-    else
-    {
+    else {
         updateMarker(latLng);
     }
 }
 
-bool MapView::updateReference(
-        QMap<QString, QVariant> latLng)
-{
+bool MapView::updateReference(QMap<QString, QVariant> latLng) {
     double lat = latLng["lat"].toDouble();
     double lng = latLng["lng"].toDouble();
 
@@ -118,9 +96,7 @@ bool MapView::updateReference(
     return mMainWindow->updateReference(lat, lng);
 }
 
-void MapView::updateMarker(
-        QMap<QString, QVariant> latLng)
-{
+void MapView::updateMarker(QMap<QString, QVariant> latLng) {
     double lat = latLng["lat"].toDouble();
     double lng = latLng["lng"].toDouble();
 
@@ -133,14 +109,11 @@ void MapView::updateMarker(
     double resultTime;
     double resultDistance = std::numeric_limits<double>::max();
 
-    for (int i = 0; i + 1 < mMainWindow->dataSize(); ++i)
-    {
-        const DataPoint &dp1 = mMainWindow->dataPoint(i);
-        const DataPoint &dp2 = mMainWindow->dataPoint(i + 1);
+    for (int i = 0; i + 1 < mMainWindow->dataSize(); ++i) {
+        const DataPoint& dp1 = mMainWindow->dataPoint(i);
+        const DataPoint& dp2 = mMainWindow->dataPoint(i + 1);
 
-        if (lower <= dp1.t && dp1.t <= upper &&
-            lower <= dp2.t && dp2.t <= upper)
-        {
+        if (lower <= dp1.t && dp1.t <= upper && lower <= dp2.t && dp2.t <= upper) {
             QPointF pt1 = QPointF(width() * (dp1.lon - mLonMin) / (mLonMax - mLonMin),
                                   height() * (mLatMax - dp1.lat) / (mLatMax - mLatMin));
             QPointF pt2 = QPointF(width() * (dp2.lon - mLonMin) / (mLonMax - mLonMin),
@@ -149,8 +122,7 @@ void MapView::updateMarker(
             double mu;
             double dist = sqrt(distSqrToLine(pt1, pt2, pos, mu));
 
-            if (dist < resultDistance)
-            {
+            if (dist < resultDistance) {
                 double t1 = dp1.t;
                 double t2 = dp2.t;
 
@@ -161,20 +133,15 @@ void MapView::updateMarker(
     }
 
     const int selectionTolerance = 8;
-    if (resultDistance < selectionTolerance)
-    {
+    if (resultDistance < selectionTolerance) {
         mMainWindow->setMark(resultTime);
     }
-    else
-    {
+    else {
         mMainWindow->clearMark();
     }
 }
 
-void MapView::boundsChanged(
-        QMap<QString, QVariant> sw,
-        QMap<QString, QVariant> ne)
-{
+void MapView::boundsChanged(QMap<QString, QVariant> sw, QMap<QString, QVariant> ne) {
     double oldScale = metersPerPixel();
 
     mLatMin = sw["lat"].toDouble();
@@ -182,33 +149,32 @@ void MapView::boundsChanged(
     mLatMax = ne["lat"].toDouble();
     mLonMax = ne["lng"].toDouble();
 
-    if (oldScale != metersPerPixel())
-    {
+    if (oldScale != metersPerPixel()) {
         updateView();
     }
 }
 
-void MapView::initView()
-{
+void MapView::initView() {
     double xMin, xMax;
     double yMin, yMax;
 
-    for (int i = 0; i < mMainWindow->dataSize(); ++i)
-    {
-        const DataPoint &dp = mMainWindow->dataPoint(i);
+    for (int i = 0; i < mMainWindow->dataSize(); ++i) {
+        const DataPoint& dp = mMainWindow->dataPoint(i);
 
-        if (i == 0)
-        {
+        if (i == 0) {
             xMin = xMax = dp.lon;
             yMin = yMax = dp.lat;
         }
-        else
-        {
-            if (dp.lon < xMin) xMin = dp.lon;
-            if (dp.lon > xMax) xMax = dp.lon;
+        else {
+            if (dp.lon < xMin)
+                xMin = dp.lon;
+            if (dp.lon > xMax)
+                xMax = dp.lon;
 
-            if (dp.lat < yMin) yMin = dp.lat;
-            if (dp.lat > yMax) yMax = dp.lat;
+            if (dp.lat < yMin)
+                yMin = dp.lat;
+            if (dp.lat > yMax)
+                yMax = dp.lat;
         }
     }
 
@@ -223,8 +189,7 @@ void MapView::initView()
     mMapCore->setBounds(sw, ne);
 }
 
-void MapView::updateView()
-{
+void MapView::updateView() {
     double lower = mMainWindow->rangeLower();
     double upper = mMainWindow->rangeUpper();
 
@@ -234,15 +199,14 @@ void MapView::updateView()
     QList<QVariant> data;
 
     double distPrev;
-    for (int i = 0; i < mMainWindow->dataSize(); ++i)
-    {
-        const DataPoint &dp = mMainWindow->dataPoint(i);
+    for (int i = 0; i < mMainWindow->dataSize(); ++i) {
+        const DataPoint& dp = mMainWindow->dataPoint(i);
 
-        if (i > 0 && dp.dist2D - distPrev < threshold) continue;
+        if (i > 0 && dp.dist2D - distPrev < threshold)
+            continue;
         distPrev = dp.dist2D;
 
-        if (lower <= dp.t && dp.t <= upper)
-        {
+        if (lower <= dp.t && dp.t <= upper) {
             QMap<QString, QVariant> val;
             val["lat"] = dp.lat;
             val["lng"] = dp.lon;
@@ -262,14 +226,13 @@ void MapView::updateView()
     mMainWindow->prepareMapView(this);
 }
 
-void MapView::updateCursor()
-{
-    if (mMainWindow->dataSize() == 0) return;
+void MapView::updateCursor() {
+    if (mMainWindow->dataSize() == 0)
+        return;
 
-    if (mMainWindow->markActive())
-    {
+    if (mMainWindow->markActive()) {
         // Add marker to map
-        const DataPoint &dpEnd = mMainWindow->interpolateDataT(mMainWindow->markEnd());
+        const DataPoint& dpEnd = mMainWindow->interpolateDataT(mMainWindow->markEnd());
 
         QMap<QString, QVariant> latLng;
         latLng["lat"] = dpEnd.lat;
@@ -277,16 +240,14 @@ void MapView::updateCursor()
 
         mMapCore->setMark(latLng);
     }
-    else
-    {
+    else {
         // Clear marker
         mMapCore->clearMark();
     }
 
-    if (mMainWindow->mediaCursorRef() > 0)
-    {
+    if (mMainWindow->mediaCursorRef() > 0) {
         // Add media cursor to map
-        const DataPoint &dp = mMainWindow->interpolateDataT(mMainWindow->mediaCursor());
+        const DataPoint& dp = mMainWindow->interpolateDataT(mMainWindow->mediaCursor());
 
         QMap<QString, QVariant> latLng;
         latLng["lat"] = dp.lat;
@@ -294,27 +255,22 @@ void MapView::updateCursor()
 
         mMapCore->setMediaCursor(latLng);
     }
-    else
-    {
+    else {
         // Clear media cursor
         mMapCore->clearMediaCursor();
     }
 }
 
-void MapView::updateMapMode()
-{
-    if (mMainWindow->mapMode() == MainWindow::Default)
-    {
+void MapView::updateMapMode() {
+    if (mMainWindow->mapMode() == MainWindow::Default) {
         mMapCore->enableDrag();
     }
-    else
-    {
+    else {
         mMapCore->disableDrag();
     }
 }
 
-double MapView::metersPerPixel() const
-{
+double MapView::metersPerPixel() const {
     const double earthCircumference = 40075000; // m
     return earthCircumference * (mLatMax - mLatMin) / 360. / height();
 }

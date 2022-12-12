@@ -21,70 +21,53 @@
 **  Website: http://flysight.ca/                                          **
 ****************************************************************************/
 
+#include "liftdragplot.h"
+
+#include "common.h"
+#include "mainwindow.h"
 #include <QToolTip>
 #include <QVector2D>
 
-#include "common.h"
-#include "liftdragplot.h"
-#include "mainwindow.h"
-
-LiftDragPlot::LiftDragPlot(QWidget *parent) :
-    QCustomPlot(parent),
-    mMainWindow(0),
-    mDragging(false)
-{
-
+LiftDragPlot::LiftDragPlot(QWidget* parent) :
+    QCustomPlot(parent), mMainWindow(0), mDragging(false) {
 }
 
-QSize LiftDragPlot::sizeHint() const
-{
+QSize LiftDragPlot::sizeHint() const {
     // Keeps windows from being initialized as very short
     return QSize(175, 175);
 }
 
-void LiftDragPlot::mousePressEvent(
-        QMouseEvent *event)
-{
-    if (axisRect()->rect().contains(event->pos()))
-    {
+void LiftDragPlot::mousePressEvent(QMouseEvent* event) {
+    if (axisRect()->rect().contains(event->pos())) {
         mBeginPos = event->pos();
     }
 
     QCustomPlot::mousePressEvent(event);
 }
 
-void LiftDragPlot::mouseReleaseEvent(
-        QMouseEvent *event)
-{
-    if (!mDragging)
-    {
+void LiftDragPlot::mouseReleaseEvent(QMouseEvent* event) {
+    if (!mDragging) {
         mMainWindow->setMaxLift(yAxis->pixelToCoord(mBeginPos.y()));
         mMainWindow->clearMark();
         QToolTip::hideText();
     }
-    else
-    {
+    else {
         mDragging = false;
     }
 
     QCustomPlot::mouseReleaseEvent(event);
 }
 
-void LiftDragPlot::mouseMoveEvent(
-        QMouseEvent *event)
-{
-    if (event->buttons() & Qt::LeftButton)
-    {
+void LiftDragPlot::mouseMoveEvent(QMouseEvent* event) {
+    if (event->buttons() & Qt::LeftButton) {
         QPoint pos = event->pos();
         QVector2D diff = QVector2D(pos - mBeginPos);
 
-        if (diff.length() > selectionTolerance())
-        {
+        if (diff.length() > selectionTolerance()) {
             mDragging = true;
         }
 
-        if (mDragging)
-        {
+        if (mDragging) {
             const double cd = xAxis->pixelToCoord(pos.x());
             const double cl = yAxis->pixelToCoord(pos.y());
 
@@ -95,45 +78,37 @@ void LiftDragPlot::mouseMoveEvent(
             mMainWindow->setMaxLD(1 / sqrt(4 * a * c));
         }
     }
-    else if (QCPCurve *graph = qobject_cast<QCPCurve *>(plottable(0)))
-    {
+    else if (QCPCurve* graph = qobject_cast<QCPCurve*>(plottable(0))) {
         QSharedPointer<QCPCurveDataContainer> data = graph->data();
 
         double resultTime;
         double resultDistance = std::numeric_limits<double>::max();
 
-        for (QCPCurveDataContainer::const_iterator it = data->constBegin();
-             it != data->constEnd();
-             ++it)
-        {
-            QVector2D pt = QVector2D(xAxis->coordToPixel(it->key),
-                                     yAxis->coordToPixel(it->value));
+        for (QCPCurveDataContainer::const_iterator it = data->constBegin(); it != data->constEnd();
+             ++it) {
+            QVector2D pt = QVector2D(xAxis->coordToPixel(it->key), yAxis->coordToPixel(it->value));
 
             double dist = pt.distanceToPoint(QVector2D(event->pos()));
 
-            if (dist < resultDistance)
-            {
+            if (dist < resultDistance) {
                 resultTime = it->t;
                 resultDistance = dist;
             }
         }
 
-        if (resultDistance < selectionTolerance())
-        {
+        if (resultDistance < selectionTolerance()) {
             setMark(resultTime);
         }
-        else
-        {
+        else {
             mMainWindow->clearMark();
             QToolTip::hideText();
         }
     }
 }
 
-void LiftDragPlot::setMark(
-        double mark)
-{
-    if (mMainWindow->dataSize() == 0) return;
+void LiftDragPlot::setMark(double mark) {
+    if (mMainWindow->dataSize() == 0)
+        return;
 
     DataPoint dp = mMainWindow->interpolateDataT(mark);
     mMainWindow->setMark(mark);
@@ -142,22 +117,21 @@ void LiftDragPlot::setMark(
     status = QString("<table width='200'>");
 
     status += QString("<tr style='color:%3;'><td>%1</td><td>%2</td></tr>")
-            .arg(PlotLift().title(mMainWindow->units()))
-            .arg(PlotLift().value(dp, mMainWindow->units()))
-            .arg(PlotLift().color().name());
+                  .arg(PlotLift().title(mMainWindow->units()))
+                  .arg(PlotLift().value(dp, mMainWindow->units()))
+                  .arg(PlotLift().color().name());
 
     status += QString("<tr style='color:%3;'><td>%1</td><td>%2</td></tr>")
-            .arg(PlotDrag().title(mMainWindow->units()))
-            .arg(PlotDrag().value(dp, mMainWindow->units()))
-            .arg(PlotDrag().color().name());
+                  .arg(PlotDrag().title(mMainWindow->units()))
+                  .arg(PlotDrag().value(dp, mMainWindow->units()))
+                  .arg(PlotDrag().color().name());
 
     status += QString("</table>");
 
     QToolTip::showText(QCursor::pos(), status);
 }
 
-void LiftDragPlot::updatePlot()
-{
+void LiftDragPlot::updatePlot() {
     clearPlottables();
     clearItems();
 
@@ -165,43 +139,43 @@ void LiftDragPlot::updatePlot()
     yAxis->setLabel(tr("Lift Coefficient"));
 
     // Return now if plot empty
-    if (mMainWindow->dataSize() == 0) return;
+    if (mMainWindow->dataSize() == 0)
+        return;
 
     // Get plot range
     double lower = mMainWindow->rangeLower();
     double upper = mMainWindow->rangeUpper();
 
-    QVector< double > t, x, y;
+    QVector<double> t, x, y;
 
     double xMin, xMax;
     double yMin, yMax;
 
     int start = mMainWindow->findIndexBelowT(lower) + 1;
-    int end   = mMainWindow->findIndexAboveT(upper);
+    int end = mMainWindow->findIndexAboveT(upper);
 
     double s10 = 0, s01 = 0, s20 = 0, s11 = 0;
     double s21 = 0, s30 = 0, s40 = 0;
 
     bool first = true;
-    for (int i = start; i < end; ++i)
-    {
-        const DataPoint &dp = mMainWindow->dataPoint(i);
+    for (int i = start; i < end; ++i) {
+        const DataPoint& dp = mMainWindow->dataPoint(i);
 
         t.append(dp.t);
         x.append(dp.drag);
         y.append(dp.lift);
 
-        if (first)
-        {
+        if (first) {
             xMax = x.back();
             yMax = y.back();
 
             first = false;
         }
-        else
-        {
-            if (x.back() > xMax) xMax = x.back();
-            if (y.back() > yMax) yMax = y.back();
+        else {
+            if (x.back() > xMax)
+                xMax = x.back();
+            if (y.back() > yMax)
+                yMax = y.back();
         }
 
         s10 += dp.lift;
@@ -213,7 +187,7 @@ void LiftDragPlot::updatePlot()
         s40 += dp.lift * dp.lift * dp.lift * dp.lift;
     }
 
-    QCPCurve *curve = new QCPCurve(xAxis, yAxis);
+    QCPCurve* curve = new QCPCurve(xAxis, yAxis);
     curve->setData(t, x, y);
     curve->setPen(QPen(Qt::lightGray, mMainWindow->lineThickness()));
     curve->setLineStyle(QCPCurve::lsNone);
@@ -228,56 +202,50 @@ void LiftDragPlot::updatePlot()
     yMin = yAxis->range().lower;
     yMax = yAxis->range().upper;
 
-    if (mMainWindow->mediaCursorRef() > 0)
-    {
+    if (mMainWindow->mediaCursorRef() > 0) {
         int i1 = mMainWindow->findIndexBelowT(mMainWindow->mediaCursor()) + 1;
         int i2 = mMainWindow->findIndexAboveT(mMainWindow->mediaCursor()) - 1;
 
-        const DataPoint &dp1 = mMainWindow->dataPoint(i1);
-        const DataPoint &dp2 = mMainWindow->dataPoint(i2);
+        const DataPoint& dp1 = mMainWindow->dataPoint(i1);
+        const DataPoint& dp2 = mMainWindow->dataPoint(i2);
 
-        QVector< double > xMark, yMark;
+        QVector<double> xMark, yMark;
 
-        if (mMainWindow->markEnd() - dp1.t < dp2.t - mMainWindow->markEnd())
-        {
+        if (mMainWindow->markEnd() - dp1.t < dp2.t - mMainWindow->markEnd()) {
             xMark.append(dp1.drag);
             yMark.append(dp1.lift);
         }
-        else
-        {
+        else {
             xMark.append(dp2.drag);
             yMark.append(dp2.lift);
         }
 
-        QCPGraph *graph = addGraph();
+        QCPGraph* graph = addGraph();
         graph->setData(xMark, yMark);
         graph->setPen(QPen(Qt::darkGray, mMainWindow->lineThickness()));
         graph->setLineStyle(QCPGraph::lsNone);
         graph->setScatterStyle(QCPScatterStyle::ssDisc);
     }
 
-    if (mMainWindow->markActive())
-    {
+    if (mMainWindow->markActive()) {
         int i1 = mMainWindow->findIndexBelowT(mMainWindow->markEnd()) + 1;
         int i2 = mMainWindow->findIndexAboveT(mMainWindow->markEnd()) - 1;
 
-        const DataPoint &dp1 = mMainWindow->dataPoint(i1);
-        const DataPoint &dp2 = mMainWindow->dataPoint(i2);
+        const DataPoint& dp1 = mMainWindow->dataPoint(i1);
+        const DataPoint& dp2 = mMainWindow->dataPoint(i2);
 
-        QVector< double > xMark, yMark;
+        QVector<double> xMark, yMark;
 
-        if (mMainWindow->markEnd() - dp1.t < dp2.t - mMainWindow->markEnd())
-        {
+        if (mMainWindow->markEnd() - dp1.t < dp2.t - mMainWindow->markEnd()) {
             xMark.append(dp1.drag);
             yMark.append(dp1.lift);
         }
-        else
-        {
+        else {
             xMark.append(dp2.drag);
             yMark.append(dp2.lift);
         }
 
-        QCPGraph *graph = addGraph();
+        QCPGraph* graph = addGraph();
         graph->setData(xMark, yMark);
         graph->setPen(QPen(Qt::black, mMainWindow->lineThickness()));
         graph->setLineStyle(QCPGraph::lsNone);
@@ -292,15 +260,14 @@ void LiftDragPlot::updatePlot()
     // Draw tangent line
     const double yt = sqrt(c / a);
 
-    if (a != 0)
-    {
+    if (a != 0) {
         x.clear();
         y.clear();
 
         x << m * yMin << m * yMax;
         y << yMin << yMax;
 
-        QCPGraph *graph = addGraph();
+        QCPGraph* graph = addGraph();
         graph->setData(x, y);
         graph->setPen(QPen(Qt::blue, mMainWindow->lineThickness(), Qt::DashLine));
     }
@@ -312,7 +279,7 @@ void LiftDragPlot::updatePlot()
     x << mMainWindow->minDrag() << mMainWindow->minDrag();
     y << yMin << yMax;
 
-    QCPGraph *graph = addGraph();
+    QCPGraph* graph = addGraph();
     graph->setData(x, y);
     graph->setPen(QPen(Qt::blue, mMainWindow->lineThickness(), Qt::DashLine));
 
@@ -332,8 +299,7 @@ void LiftDragPlot::updatePlot()
     x.clear();
     y.clear();
 
-    for (int i = 0; i <= 100; ++i)
-    {
+    for (int i = 0; i <= 100; ++i) {
         const double yy = yMin + (yMax - yMin) / 100 * i;
 
         t.append(yy);
@@ -359,10 +325,10 @@ void LiftDragPlot::updatePlot()
     graph->setScatterStyle(QCPScatterStyle::ssDisc);
 
     // Add label to show equation for saved curve
-    QCPItemText *textLabel = new QCPItemText(this);
+    QCPItemText* textLabel = new QCPItemText(this);
 
     QPainter painter(this);
-    double mmPerPix = (double) painter.device()->widthMM() / painter.device()->width();
+    double mmPerPix = (double)painter.device()->widthMM() / painter.device()->width();
 
     double xRatioPerPix = 1.0 / axisRect()->width();
     double xRatioPerMM = xRatioPerPix / mmPerPix;
@@ -370,24 +336,19 @@ void LiftDragPlot::updatePlot()
     double yRatioPerPix = 1.0 / axisRect()->height();
     double yRatioPerMM = yRatioPerPix / mmPerPix;
 
-    textLabel->setPositionAlignment(Qt::AlignBottom|Qt::AlignRight);
+    textLabel->setPositionAlignment(Qt::AlignBottom | Qt::AlignRight);
     textLabel->setTextAlignment(Qt::AlignRight);
     textLabel->position->setType(QCPItemPosition::ptAxisRectRatio);
-    textLabel->position->setCoords(1 - 5 * xRatioPerMM,
-                                   1 - 5 * yRatioPerMM);
-    textLabel->setText(
-                QString("Minimum drag = %1\nMaximum lift = %2\nMaximum L/D = %3")
-                    .arg(fabs(c))
-                    .arg(mMainWindow->maxLift())
-                    .arg(1/ m));
+    textLabel->position->setCoords(1 - 5 * xRatioPerMM, 1 - 5 * yRatioPerMM);
+    textLabel->setText(QString("Minimum drag = %1\nMaximum lift = %2\nMaximum L/D = %3")
+                           .arg(fabs(c))
+                           .arg(mMainWindow->maxLift())
+                           .arg(1 / m));
 
     replot();
 }
 
-void LiftDragPlot::setViewRange(
-        double xMax,
-        double yMax)
-{
+void LiftDragPlot::setViewRange(double xMax, double yMax) {
     xAxis->setRange(0, xMax * 1.1);
     yAxis->setRange(0, yMax * 1.1);
 }

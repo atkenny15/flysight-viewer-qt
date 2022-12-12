@@ -22,23 +22,20 @@
 ****************************************************************************/
 
 #include "scoringview.h"
-#include "ui_scoringview.h"
 
+#include "acroform.h"
+#include "flareform.h"
 #include "mainwindow.h"
 #include "performanceform.h"
 #include "ppcform.h"
 #include "scoringmethod.h"
 #include "speedform.h"
+#include "ui_scoringview.h"
 #include "wideopendistanceform.h"
 #include "wideopenspeedform.h"
-#include "flareform.h"
-#include "acroform.h"
 
-ScoringView::ScoringView(QWidget *parent) :
-    QWidget(parent),
-    ui(new Ui::ScoringView),
-    mMainWindow(0)
-{
+ScoringView::ScoringView(QWidget* parent) :
+    QWidget(parent), ui(new Ui::ScoringView), mMainWindow(0) {
     ui->setupUi(this);
 
     // Create child forms
@@ -69,18 +66,14 @@ ScoringView::ScoringView(QWidget *parent) :
     ui->stackedWidget->addWidget(mAcroForm);
 
     // Connect mode combo to stacked widget
-    connect(ui->modeComboBox, SIGNAL(activated(int)),
-            this, SLOT(changePage(int)));
+    connect(ui->modeComboBox, SIGNAL(activated(int)), this, SLOT(changePage(int)));
 }
 
-ScoringView::~ScoringView()
-{
+ScoringView::~ScoringView() {
     delete ui;
 }
 
-void ScoringView::setMainWindow(
-        MainWindow *mainWindow)
-{
+void ScoringView::setMainWindow(MainWindow* mainWindow) {
     mMainWindow = mainWindow;
 
     // Initialize mode selection
@@ -97,38 +90,34 @@ void ScoringView::setMainWindow(
     mAcroForm->setMainWindow(mainWindow);
 }
 
-void ScoringView::updateView()
-{
+void ScoringView::updateView() {
     // Update forms
-    switch (mMainWindow->scoringMode())
-    {
-    case MainWindow::PPC:
-        mPPCForm->updateView();
-        break;
-    case MainWindow::Speed:
-        mSpeedForm->updateView();
-        break;
-    case MainWindow::Performance:
-        mPerformanceForm->updateView();
-        break;
-    case MainWindow::WideOpenSpeed:
-        mWideOpenSpeedForm->updateView();
-        break;
-    case MainWindow::WideOpenDistance:
-        mWideOpenDistanceForm->updateView();
-        break;
-    case MainWindow::Flare:
-        mFlareForm->updateView();
-        break;
-    case MainWindow::Acro:
-        mAcroForm->updateView();
-        break;
+    switch (mMainWindow->scoringMode()) {
+        case MainWindow::PPC:
+            mPPCForm->updateView();
+            break;
+        case MainWindow::Speed:
+            mSpeedForm->updateView();
+            break;
+        case MainWindow::Performance:
+            mPerformanceForm->updateView();
+            break;
+        case MainWindow::WideOpenSpeed:
+            mWideOpenSpeedForm->updateView();
+            break;
+        case MainWindow::WideOpenDistance:
+            mWideOpenDistanceForm->updateView();
+            break;
+        case MainWindow::Flare:
+            mFlareForm->updateView();
+            break;
+        case MainWindow::Acro:
+            mAcroForm->updateView();
+            break;
     }
 }
 
-void ScoringView::changePage(
-        int page)
-{
-    mMainWindow->setScoringMode((MainWindow::ScoringMode) page);
+void ScoringView::changePage(int page) {
+    mMainWindow->setScoringMode((MainWindow::ScoringMode)page);
     ui->stackedWidget->setCurrentIndex(page);
 }

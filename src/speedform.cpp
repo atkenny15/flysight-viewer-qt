@@ -22,22 +22,18 @@
 ****************************************************************************/
 
 #include "speedform.h"
-#include "ui_speedform.h"
 
 #include "common.h"
 #include "datapoint.h"
 #include "mainwindow.h"
 #include "plotvalue.h"
-#include "speedscoring.h"
 #include "ppcupload.h"
+#include "speedscoring.h"
+#include "ui_speedform.h"
 
 #define METERS_TO_FEET 3.280839895
 
-SpeedForm::SpeedForm(QWidget *parent) :
-    QWidget(parent),
-    ui(new Ui::SpeedForm),
-    mMainWindow(0)
-{
+SpeedForm::SpeedForm(QWidget* parent) : QWidget(parent), ui(new Ui::SpeedForm), mMainWindow(0) {
     ui->setupUi(this);
 
     connect(ui->faiButton, SIGNAL(clicked()), this, SLOT(onFAIButtonClicked()));
@@ -55,32 +51,28 @@ SpeedForm::SpeedForm(QWidget *parent) :
     connect(ui->ppcButton, SIGNAL(clicked()), this, SLOT(onPpcButtonClicked()));
 }
 
-SpeedForm::~SpeedForm()
-{
+SpeedForm::~SpeedForm() {
     delete ui;
 }
 
-QSize SpeedForm::sizeHint() const
-{
+QSize SpeedForm::sizeHint() const {
     // Keeps windows from being initialized as very short
     return QSize(175, 175);
 }
 
-void SpeedForm::setMainWindow(
-        MainWindow *mainWindow)
-{
+void SpeedForm::setMainWindow(MainWindow* mainWindow) {
     mMainWindow = mainWindow;
 }
 
-void SpeedForm::updateView()
-{
-    if (mMainWindow->dataSize() == 0) return;
+void SpeedForm::updateView() {
+    if (mMainWindow->dataSize() == 0)
+        return;
 
     // Update mode selection
     ui->actualButton->setChecked(mMainWindow->windowMode() == MainWindow::Actual);
     ui->optimalButton->setChecked(mMainWindow->windowMode() == MainWindow::Optimal);
 
-    SpeedScoring *method = (SpeedScoring *) mMainWindow->scoringMethod(MainWindow::Speed);
+    SpeedScoring* method = (SpeedScoring*)mMainWindow->scoringMethod(MainWindow::Speed);
 
     const double fromExit = method->fromExit();
     const double bottom = method->windowBottom();
@@ -100,32 +92,30 @@ void SpeedForm::updateView()
     double scoreAccuracy;
     bool accuracyOkay = false;
 
-    switch (mMainWindow->windowMode())
-    {
-    case MainWindow::Actual:
-        success = method->getWindowBounds(mMainWindow->data(), dpBottom, dpTop, dpExit);
-        accuracyOkay = method->getAccuracy(mMainWindow->data(), scoreAccuracy, dpExit);
-        break;
-    case MainWindow::Optimal:
-        success = method->getWindowBounds(mMainWindow->optimal(), dpBottom, dpTop, dpExit);
-        break;
+    switch (mMainWindow->windowMode()) {
+        case MainWindow::Actual:
+            success = method->getWindowBounds(mMainWindow->data(), dpBottom, dpTop, dpExit);
+            accuracyOkay = method->getAccuracy(mMainWindow->data(), scoreAccuracy, dpExit);
+            break;
+        case MainWindow::Optimal:
+            success = method->getWindowBounds(mMainWindow->optimal(), dpBottom, dpTop, dpExit);
+            break;
     }
 
-    if (success)
-    {
+    if (success) {
         // Calculate results
         const double time = dpBottom.t - dpTop.t;
         const double verticalSpeed = (dpTop.z - dpBottom.z) / time;
 
         // Update display
-        if (mMainWindow->units() == PlotValue::Metric)
-        {
-            ui->verticalSpeedEdit->setText(QString("%1").arg(verticalSpeed * MPS_TO_KMH, 0, 'f', 2));
+        if (mMainWindow->units() == PlotValue::Metric) {
+            ui->verticalSpeedEdit->setText(
+                QString("%1").arg(verticalSpeed * MPS_TO_KMH, 0, 'f', 2));
             ui->verticalSpeedUnits->setText(tr("km/h"));
         }
-        else
-        {
-            ui->verticalSpeedEdit->setText(QString("%1").arg(verticalSpeed * MPS_TO_MPH, 0, 'f', 2));
+        else {
+            ui->verticalSpeedEdit->setText(
+                QString("%1").arg(verticalSpeed * MPS_TO_MPH, 0, 'f', 2));
             ui->verticalSpeedUnits->setText(tr("mph"));
         }
 
@@ -142,15 +132,12 @@ void SpeedForm::updateView()
         ui->optimizeButton->setEnabled(true);
         ui->ppcButton->setEnabled(true);
     }
-    else
-    {
+    else {
         // Update display
-        if (mMainWindow->units() == PlotValue::Metric)
-        {
+        if (mMainWindow->units() == PlotValue::Metric) {
             ui->verticalSpeedUnits->setText(tr("km/h"));
         }
-        else
-        {
+        else {
             ui->verticalSpeedUnits->setText(tr("mph"));
         }
 
@@ -168,32 +155,28 @@ void SpeedForm::updateView()
         ui->ppcButton->setEnabled(false);
     }
 
-    if (accuracyOkay)
-    {
+    if (accuracyOkay) {
         ui->scoreAccuracyEdit->setText(QString("%1").arg(scoreAccuracy, 0, 'f', 3));
     }
-    else
-    {
+    else {
         ui->scoreAccuracyEdit->setText(tr("n/a"));
     }
 }
 
-void SpeedForm::onFAIButtonClicked()
-{
-    SpeedScoring *method = (SpeedScoring *) mMainWindow->scoringMethod(MainWindow::Speed);
+void SpeedForm::onFAIButtonClicked() {
+    SpeedScoring* method = (SpeedScoring*)mMainWindow->scoringMethod(MainWindow::Speed);
 
     method->setFromExit(2255.52);
     method->setWindowBottom(1706.88);
     method->setValidationWindow(1005.84);
 }
 
-void SpeedForm::onApplyButtonClicked()
-{
+void SpeedForm::onApplyButtonClicked() {
     double fromExit = ui->fromExitEdit->text().toDouble() / METERS_TO_FEET;
     double bottom = ui->bottomEdit->text().toDouble() / METERS_TO_FEET;
     double validationWindow = ui->validationEdit->text().toDouble() / METERS_TO_FEET;
 
-    SpeedScoring *method = (SpeedScoring *) mMainWindow->scoringMethod(MainWindow::Speed);
+    SpeedScoring* method = (SpeedScoring*)mMainWindow->scoringMethod(MainWindow::Speed);
 
     method->setFromExit(fromExit);
     method->setWindowBottom(bottom);
@@ -202,10 +185,8 @@ void SpeedForm::onApplyButtonClicked()
     mMainWindow->setFocus();
 }
 
-void SpeedForm::keyPressEvent(QKeyEvent *event)
-{
-    if (event->key() == Qt::Key_Escape)
-    {
+void SpeedForm::keyPressEvent(QKeyEvent* event) {
+    if (event->key() == Qt::Key_Escape) {
         // Reset window bounds
         updateView();
 
@@ -216,19 +197,16 @@ void SpeedForm::keyPressEvent(QKeyEvent *event)
     QWidget::keyPressEvent(event);
 }
 
-void SpeedForm::onActualButtonClicked()
-{
+void SpeedForm::onActualButtonClicked() {
     mMainWindow->setWindowMode(MainWindow::Actual);
 }
 
-void SpeedForm::onOptimalButtonClicked()
-{
+void SpeedForm::onOptimalButtonClicked() {
     mMainWindow->setWindowMode(MainWindow::Optimal);
 }
 
-void SpeedForm::onOptimizeButtonClicked()
-{
-    SpeedScoring *method = (SpeedScoring *) mMainWindow->scoringMethod(MainWindow::Speed);
+void SpeedForm::onOptimizeButtonClicked() {
+    SpeedScoring* method = (SpeedScoring*)mMainWindow->scoringMethod(MainWindow::Speed);
 
     // Perform optimization
     method->optimize();
@@ -242,10 +220,11 @@ void SpeedForm::onOptimizeButtonClicked()
 void SpeedForm::onPpcButtonClicked() {
 
     // Return if plot empty
-    if (mMainWindow->dataSize() == 0) return;
+    if (mMainWindow->dataSize() == 0)
+        return;
 
-    PPCUpload *uploader = new PPCUpload(mMainWindow);
-    SpeedScoring *method = (SpeedScoring *) mMainWindow->scoringMethod(MainWindow::Speed);
+    PPCUpload* uploader = new PPCUpload(mMainWindow);
+    SpeedScoring* method = (SpeedScoring*)mMainWindow->scoringMethod(MainWindow::Speed);
     DataPoint dpBottom, dpTop;
 
     ui->faiButton->click();

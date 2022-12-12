@@ -24,6 +24,9 @@
 #ifndef MAINWINDOW_H
 #define MAINWINDOW_H
 
+#include "dataplot.h"
+#include "datapoint.h"
+#include "dataview.h"
 #include <QLabel>
 #include <QMainWindow>
 #include <QMap>
@@ -31,10 +34,6 @@
 #include <QSqlDatabase>
 #include <QStack>
 #include <QVector>
-
-#include "dataplot.h"
-#include "datapoint.h"
-#include "dataview.h"
 
 class MapView;
 class QCPRange;
@@ -46,43 +45,39 @@ namespace Ui {
 class MainWindow;
 }
 
-class MainWindow : public QMainWindow
-{
+class MainWindow : public QMainWindow {
     Q_OBJECT
-    
+
 public:
-    typedef enum {
-        Pan, Zoom, Measure, Zero, Ground, Course
-    } Tool;
+    typedef enum { Pan, Zoom, Measure, Zero, Ground, Course } Tool;
+
+    typedef enum { Actual, Optimal } WindowMode;
+
+    typedef enum { Time, Distance, HorizontalSpeed, VerticalSpeed } OptimizationMode;
 
     typedef enum {
-        Actual, Optimal
-    } WindowMode;
-
-    typedef enum {
-        Time, Distance, HorizontalSpeed, VerticalSpeed
-    } OptimizationMode;
-
-    typedef enum {
-        PPC, Speed, Performance, WideOpenSpeed, WideOpenDistance, Flare, Acro, smLast
+        PPC,
+        Speed,
+        Performance,
+        WideOpenSpeed,
+        WideOpenDistance,
+        Flare,
+        Acro,
+        smLast
     } ScoringMode;
 
-    typedef enum {
-        Automatic, Fixed
-    } GroundReference;
+    typedef enum { Automatic, Fixed } GroundReference;
 
-    typedef enum {
-        Default, SetStart, SetEnd
-    } MapMode;
+    typedef enum { Default, SetStart, SetEnd } MapMode;
 
-    typedef QVector< DataPoint > DataPoints;
+    typedef QVector<DataPoint> DataPoints;
 
-    explicit MainWindow(QWidget *parent = 0);
+    explicit MainWindow(QWidget* parent = 0);
     ~MainWindow();
 
-    const DataPoints &data() const { return m_data; }
+    const DataPoints& data() const { return m_data; }
     int dataSize() const { return m_data.size(); }
-    const DataPoint &dataPoint(int i) const { return m_data[i]; }
+    const DataPoint& dataPoint(int i) const { return m_data[i]; }
 
     PlotValue::Units units() const { return m_units; }
 
@@ -109,10 +104,10 @@ public:
     double rotation() const { return m_viewDataRotation; }
 
     int waypointSize() const { return m_waypoints.size(); }
-    const DataPoint &waypoint(int i) const { return m_waypoints[i]; }
+    const DataPoint& waypoint(int i) const { return m_waypoints[i]; }
 
-    double getDistance(const DataPoint &dp1, const DataPoint &dp2);
-    double getBearing(const DataPoint &dp1, const DataPoint &dp2);
+    double getDistance(const DataPoint& dp1, const DataPoint& dp2);
+    double getBearing(const DataPoint& dp1, const DataPoint& dp2);
 
     void setMark(double start, double end);
     void setMark(double mark);
@@ -121,8 +116,8 @@ public:
     void setMediaCursor(double mediaCursor);
     double mediaCursor() const { return mMediaCursor; }
 
-    void mediaCursorAddRef(QObject *parent);
-    void mediaCursorRemoveRef(QObject *parent);
+    void mediaCursorAddRef(QObject* parent);
+    void mediaCursorRemoveRef(QObject* parent);
     int mediaCursorRef() const { return mMediaCursorRef.size(); }
 
     void pauseMedia();
@@ -148,49 +143,49 @@ public:
 
     void setMinDrag(double minDrag);
     void setMaxLift(double maxLift);
-    void setMaxLD(double maxLD);    
+    void setMaxLD(double maxLD);
 
-    const DataPoints &optimal() const { return m_optimal; }
-    void setOptimal(const DataPoints &result);
+    const DataPoints& optimal() const { return m_optimal; }
+    void setOptimal(const DataPoints& result);
 
     int optimalSize() const { return m_optimal.size(); }
-    const DataPoint &optimalPoint(int i) const { return m_optimal[i]; }
+    const DataPoint& optimalPoint(int i) const { return m_optimal[i]; }
 
-    DataPlot *plotArea() const;
+    DataPlot* plotArea() const;
 
     void setLineThickness(double width);
     double lineThickness() const { return mLineThickness; }
 
     void setWind(double windE, double windN);
-    void getWind(QString trackName, double *windE, double *windN);
-    void getWindSpeedDirection(QString trackName, double *windSpeed, double *windDirection);
+    void getWind(QString trackName, double* windE, double* windN);
+    void getWindSpeedDirection(QString trackName, double* windSpeed, double* windDirection);
     bool windAdjustment() const { return mWindAdjustment; }
 
-    double getQNE(void) const { return mFixedReference;}
+    double getQNE(void) const { return mFixedReference; }
 
     void setScoringMode(ScoringMode mode);
     ScoringMode scoringMode() const { return mScoringMode; }
-    ScoringMethod *scoringMethod(int i) const { return mScoringMethods[i]; }
+    ScoringMethod* scoringMethod(int i) const { return mScoringMethods[i]; }
 
-    void prepareDataPlot(DataPlot *plot);
-    void prepareMapView(MapView *plot);
+    void prepareDataPlot(DataPlot* plot);
+    void prepareMapView(MapView* plot);
 
     bool updateReference(double lat, double lon);
 
-    void importFromDatabase(const QString &uniqueName);
-    void importFromCheckedTrack(const QString &uniqueName);
+    void importFromDatabase(const QString& uniqueName);
+    void importFromCheckedTrack(const QString& uniqueName);
 
-    void setTrackName(const QString &trackName);
+    void setTrackName(const QString& trackName);
     QString trackName() const { return mTrackName; }
 
-    void setSelectedTracks(QVector< QString > tracks);
-    void setTrackDescription(const QString &trackName, const QString &description);
+    void setSelectedTracks(QVector<QString> tracks);
+    void setTrackDescription(const QString& trackName, const QString& description);
 
-    QString trackDescription(const QString &trackName);
-    QDateTime trackStartTime(const QString &trackName);
+    QString trackDescription(const QString& trackName);
+    QDateTime trackStartTime(const QString& trackName);
 
-    void setTrackChecked(const QString &trackName, bool checked);
-    bool trackChecked(const QString &trackName) const;
+    void setTrackChecked(const QString& trackName, bool checked);
+    bool trackChecked(const QString& trackName) const;
 
     QString databasePath() const { return mDatabasePath; }
 
@@ -198,9 +193,9 @@ public:
     MapMode mapMode() const { return mMapMode; }
 
 protected:
-    void hideEvent(QHideEvent *event);
-    void showEvent(QShowEvent *event);
-    void closeEvent(QCloseEvent *event);
+    void hideEvent(QHideEvent* event);
+    void showEvent(QShowEvent* event);
+    void closeEvent(QCloseEvent* event);
 
 private slots:
     void on_actionImport_triggered();
@@ -265,78 +260,78 @@ private:
         double rangeUpper;
     } ZoomLevel;
 
-    Ui::MainWindow       *m_ui;
-    DataPoints            m_data;
-    DataPoints            m_optimal;
+    Ui::MainWindow* m_ui;
+    DataPoints m_data;
+    DataPoints m_optimal;
 
-    double                mMarkStart;
-    double                mMarkEnd;
-    bool                  mMarkActive;
+    double mMarkStart;
+    double mMarkEnd;
+    bool mMarkActive;
 
-    double                mMediaCursor;
-    QSet<QObject*>        mMediaCursorRef;
+    double mMediaCursor;
+    QSet<QObject*> mMediaCursorRef;
 
-    double                m_viewDataRotation;
+    double m_viewDataRotation;
 
-    PlotValue::Units      m_units;
+    PlotValue::Units m_units;
 
-    DataPoints            m_waypoints;
+    DataPoints m_waypoints;
 
-    Tool                  mTool;
-    Tool                  mPrevTool;
+    Tool mTool;
+    Tool mPrevTool;
 
-    ZoomLevel             mZoomLevel;
-    ZoomLevel             mZoomLevelPrev;
-    QStack< ZoomLevel >   mZoomLevelUndo;
-    QStack< ZoomLevel >   mZoomLevelRedo;
+    ZoomLevel mZoomLevel;
+    ZoomLevel mZoomLevelPrev;
+    QStack<ZoomLevel> mZoomLevelUndo;
+    QStack<ZoomLevel> mZoomLevelRedo;
 
-    double                mRangeLower;
-    double                mRangeUpper;
+    double mRangeLower;
+    double mRangeUpper;
 
-    WindowMode            mWindowMode;
+    WindowMode mWindowMode;
 
-    ScoringView          *mScoringView;
+    ScoringView* mScoringView;
 
-    QVector< ScoringMethod* > mScoringMethods;
-    ScoringMode               mScoringMode;
+    QVector<ScoringMethod*> mScoringMethods;
+    ScoringMode mScoringMode;
 
-    double                m_mass;
-    double                m_planformArea;
+    double m_mass;
+    double m_planformArea;
 
-    double                m_minDrag;
-    double                m_minLift;
-    double                m_maxLift;
-    double                m_maxLD;
+    double m_minDrag;
+    double m_minLift;
+    double m_maxLift;
+    double m_maxLD;
 
-    int                   m_simulationTime;
+    int m_simulationTime;
 
-    double                mLineThickness;
+    double mLineThickness;
 
-    double                mWindE, mWindN;
-    bool                  mWindAdjustment;
+    double mWindE, mWindN;
+    bool mWindAdjustment;
 
-    GroundReference       mGroundReference;
-    double                mFixedReference;
+    GroundReference mGroundReference;
+    double mFixedReference;
 
-    bool                  mUseDatabase;
+    bool mUseDatabase;
 
-    QString               mDatabasePath;
-    QSqlDatabase          mDatabase;
+    QString mDatabasePath;
+    QSqlDatabase mDatabase;
 
-    QString               mTrackName;
-    QVector< QString >    mSelectedTracks;
-    QMap< QString, DataPoints > mCheckedTracks;
+    QString mTrackName;
+    QVector<QString> mSelectedTracks;
+    QMap<QString, DataPoints> mCheckedTracks;
 
-    QTimer               *zoomTimer;
+    QTimer* zoomTimer;
 
-    MapMode               mMapMode;
+    MapMode mMapMode;
 
     void writeSettings();
     void readSettings();
 
     void initDatabase();
     bool setDatabaseValue(QString trackName, QString column, QString value);
-    bool getDatabaseValue(QString trackName, QString column, QString &value);
+    bool getDatabaseValue(QString trackName, QString column, QString& value);
     void saveZoomToDatabase();
 
     void initPlot();
@@ -350,28 +345,28 @@ private:
     void initLogbookView();
     void initSimulationView();
 
-    void initSingleView(const QString &title, const QString &objectName,
-                        QAction *actionShow, DataView::Direction direction);
+    void initSingleView(const QString& title, const QString& objectName, QAction* actionShow,
+                        DataView::Direction direction);
 
-    void import(QIODevice *device, DataPoints &data, QString trackName, bool initDatabase);
-    void initTime(DataPoints &data);
-    void initExit(DataPoints &data, QString trackName, bool initDatabase);
-    void initAltitude(DataPoints &data, QString trackName, bool initDatabase);
-    void initAcceleration(DataPoints &data);
-    void updateVelocity(DataPoints &data, QString trackName, bool initDatabase);
-    void initAerodynamics(DataPoints &data);
+    void import(QIODevice* device, DataPoints& data, QString trackName, bool initDatabase);
+    void initTime(DataPoints& data);
+    void initExit(DataPoints& data, QString trackName, bool initDatabase);
+    void initAltitude(DataPoints& data, QString trackName, bool initDatabase);
+    void initAcceleration(DataPoints& data);
+    void updateVelocity(DataPoints& data, QString trackName, bool initDatabase);
+    void initAerodynamics(DataPoints& data);
 
-    double getSlope(const int center, double (*value)(const DataPoint &)) const;
+    double getSlope(const int center, double (*value)(const DataPoint&)) const;
 
     void initRange(QString trackName);
 
     void updateBottomActions();
     void updateLeftActions();
 
-    void updateGround(DataPoints &data, double ground);
-    QString dateTimeToUTC(const QDateTime &dt);
+    void updateGround(DataPoints& data, double ground);
+    QString dateTimeToUTC(const QDateTime& dt);
 
-    bool exportToKML(QIODevice *device, QString name);
+    bool exportToKML(QIODevice* device, QString name);
 
 signals:
     void dataLoaded();

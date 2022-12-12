@@ -24,56 +24,45 @@
 #ifndef PLOTVALUE_H
 #define PLOTVALUE_H
 
+#include "QCustomPlot/qcustomplot.h"
+#include "datapoint.h"
 #include <QColor>
 #include <QSettings>
 #include <QString>
 
-#include "QCustomPlot/qcustomplot.h"
-
-#include "datapoint.h"
-
 #define METERS_TO_FEET 3.28084
-#define MPS_TO_MPH     2.23694
-#define MPS_TO_KMH     3.6
+#define MPS_TO_MPH 2.23694
+#define MPS_TO_KMH 3.6
 
-class PlotValue: public QObject
-{
+class PlotValue : public QObject {
     Q_OBJECT
 
 public:
-    typedef enum
-    {
-        Metric = 0,
-        Imperial
-    } Units;
+    typedef enum { Metric = 0, Imperial } Units;
 
-    PlotValue(bool visible, QColor color): mVisible(visible),
-        mColor(color), mDefaultColor(color),
-        mMinimum(0), mMaximum(1), mUseMinimum(false), mUseMaximum(false),
-        mAxis(0) {}
+    PlotValue(bool visible, QColor color) :
+        mVisible(visible), mColor(color), mDefaultColor(color), mMinimum(0), mMaximum(1),
+        mUseMinimum(false), mUseMaximum(false), mAxis(0) {}
 
     virtual const QString titleText() const = 0;
     virtual const QString unitText(Units units) const = 0;
 
-    const QString title(Units units) const
-    {
+    const QString title(Units units) const {
         QString u = unitText(units);
-        if (u.isEmpty()) return titleText();
-        else             return titleText() + tr(" (%1)").arg(u);
+        if (u.isEmpty())
+            return titleText();
+        else
+            return titleText() + tr(" (%1)").arg(u);
     }
 
-    void setColor(const QColor &color) { mColor = color; }
-    const QColor &color() const { return mColor; }
-    const QColor &defaultColor() const { return mDefaultColor; }
+    void setColor(const QColor& color) { mColor = color; }
+    const QColor& color() const { return mColor; }
+    const QColor& defaultColor() const { return mDefaultColor; }
 
-    double value(const DataPoint &dp, Units units) const
-    {
-        return rawValue(dp) * factor(units);
-    }
+    double value(const DataPoint& dp, Units units) const { return rawValue(dp) * factor(units); }
 
-    virtual double rawValue(const DataPoint &dp) const = 0;
-    virtual double factor(Units units) const
-    {
+    virtual double rawValue(const DataPoint& dp) const = 0;
+    virtual double factor(Units units) const {
         Q_UNUSED(units);
         return 1;
     }
@@ -90,8 +79,7 @@ public:
     void setUseMaximum(bool useMaximum) { mUseMaximum = useMaximum; }
     bool useMaximum() const { return mUseMaximum; }
 
-    QCPAxis *addAxis(QCustomPlot *plot, Units units)
-    {
+    QCPAxis* addAxis(QCustomPlot* plot, Units units) {
         mAxis = plot->axisRect()->addAxis(QCPAxis::atLeft);
         mAxis->setLabelColor(color());
         mAxis->setTickLabelColor(color());
@@ -101,13 +89,12 @@ public:
         mAxis->setLabel(title(units));
         return mAxis;
     }
-    QCPAxis *axis() const { return mAxis; }
+    QCPAxis* axis() const { return mAxis; }
 
     bool visible() const { return mVisible; }
     void setVisible(bool visible) { mVisible = visible; }
 
-    void readSettings()
-    {
+    void readSettings() {
         QSettings settings("FlySight", "Viewer");
         settings.beginGroup("plotValue/" + key());
         mVisible = settings.value("visible", mVisible).toBool();
@@ -119,8 +106,7 @@ public:
         settings.endGroup();
     }
 
-    void writeSettings() const
-    {
+    void writeSettings() const {
         QSettings settings("FlySight", "Viewer");
         settings.beginGroup("plotValue/" + key());
         settings.setValue("visible", mVisible);
@@ -135,650 +121,421 @@ public:
     virtual bool hasOptimal() const { return false; }
 
 private:
-    bool     mVisible;
-    QColor   mColor;
-    QColor   mDefaultColor;
-    double   mMinimum, mMaximum;
-    bool     mUseMinimum, mUseMaximum;
-    QCPAxis *mAxis;
+    bool mVisible;
+    QColor mColor;
+    QColor mDefaultColor;
+    double mMinimum, mMaximum;
+    bool mUseMinimum, mUseMaximum;
+    QCPAxis* mAxis;
 
-    const QString key() const
-    {
-        return metaObject()->className();
-    }
+    const QString key() const { return metaObject()->className(); }
 };
 
-class PlotElevation: public PlotValue
-{
+class PlotElevation : public PlotValue {
     Q_OBJECT
 
 public:
-    PlotElevation(): PlotValue(true, Qt::black) {}
-    const QString titleText() const
-    {
-        return tr("Elevation");
+    PlotElevation() : PlotValue(true, Qt::black) {}
+    const QString titleText() const { return tr("Elevation"); }
+    const QString unitText(Units units) const {
+        if (units == Metric)
+            return tr("m");
+        else
+            return tr("ft");
     }
-    const QString unitText(Units units) const
-    {
-        if (units == Metric) return tr("m");
-        else                 return tr("ft");
-    }
-    double rawValue(const DataPoint &dp) const
-    {
-        return DataPoint::elevation(dp);
-    }
-    double factor(Units units) const
-    {
-        return (units == Metric) ? 1
-                                 : METERS_TO_FEET;
-    }
+    double rawValue(const DataPoint& dp) const { return DataPoint::elevation(dp); }
+    double factor(Units units) const { return (units == Metric) ? 1 : METERS_TO_FEET; }
 
     bool hasOptimal() const { return true; }
 };
 
-class PlotVerticalSpeed: public PlotValue
-{
+class PlotVerticalSpeed : public PlotValue {
     Q_OBJECT
 
 public:
-    PlotVerticalSpeed(): PlotValue(false, Qt::green) {}
-    const QString titleText() const
-    {
-        return tr("Vertical Speed");
+    PlotVerticalSpeed() : PlotValue(false, Qt::green) {}
+    const QString titleText() const { return tr("Vertical Speed"); }
+    const QString unitText(Units units) const {
+        if (units == Metric)
+            return tr("km/h");
+        else
+            return tr("mph");
     }
-    const QString unitText(Units units) const
-    {
-        if (units == Metric) return tr("km/h");
-        else                 return tr("mph");
-    }
-    double rawValue(const DataPoint &dp) const
-    {
-        return DataPoint::verticalSpeed(dp);
-    }
-    double factor(Units units) const
-    {
-        return (units == Metric) ? MPS_TO_KMH
-                                 : MPS_TO_MPH;
-    }
+    double rawValue(const DataPoint& dp) const { return DataPoint::verticalSpeed(dp); }
+    double factor(Units units) const { return (units == Metric) ? MPS_TO_KMH : MPS_TO_MPH; }
 
     bool hasOptimal() const { return true; }
 };
 
-class PlotHorizontalSpeed: public PlotValue
-{
+class PlotHorizontalSpeed : public PlotValue {
     Q_OBJECT
 
 public:
-    PlotHorizontalSpeed(): PlotValue(false, Qt::red) {}
-    const QString titleText() const
-    {
-        return tr("Horizontal Speed");
+    PlotHorizontalSpeed() : PlotValue(false, Qt::red) {}
+    const QString titleText() const { return tr("Horizontal Speed"); }
+    const QString unitText(Units units) const {
+        if (units == Metric)
+            return tr("km/h");
+        else
+            return tr("mph");
     }
-    const QString unitText(Units units) const
-    {
-        if (units == Metric) return tr("km/h");
-        else                 return tr("mph");
-    }
-    double rawValue(const DataPoint &dp) const
-    {
-        return DataPoint::horizontalSpeed(dp);
-    }
-    double factor(Units units) const
-    {
-        return (units == Metric) ? MPS_TO_KMH
-                                 : MPS_TO_MPH;
-    }
+    double rawValue(const DataPoint& dp) const { return DataPoint::horizontalSpeed(dp); }
+    double factor(Units units) const { return (units == Metric) ? MPS_TO_KMH : MPS_TO_MPH; }
 
     bool hasOptimal() const { return true; }
 };
 
-class PlotTotalSpeed: public PlotValue
-{
+class PlotTotalSpeed : public PlotValue {
     Q_OBJECT
 
 public:
-    PlotTotalSpeed(): PlotValue(false, Qt::blue) {}
-    const QString titleText() const
-    {
-        return tr("Total Speed");
+    PlotTotalSpeed() : PlotValue(false, Qt::blue) {}
+    const QString titleText() const { return tr("Total Speed"); }
+    const QString unitText(Units units) const {
+        if (units == Metric)
+            return tr("km/h");
+        else
+            return tr("mph");
     }
-    const QString unitText(Units units) const
-    {
-        if (units == Metric) return tr("km/h");
-        else                 return tr("mph");
-    }
-    double rawValue(const DataPoint &dp) const
-    {
-        return DataPoint::totalSpeed(dp);
-    }
-    double factor(Units units) const
-    {
-        return (units == Metric) ? MPS_TO_KMH
-                                 : MPS_TO_MPH;
-    }
+    double rawValue(const DataPoint& dp) const { return DataPoint::totalSpeed(dp); }
+    double factor(Units units) const { return (units == Metric) ? MPS_TO_KMH : MPS_TO_MPH; }
 
     bool hasOptimal() const { return true; }
 };
 
-class PlotDiveAngle: public PlotValue
-{
+class PlotDiveAngle : public PlotValue {
     Q_OBJECT
 
 public:
-    PlotDiveAngle(): PlotValue(false, Qt::magenta) {}
-    const QString titleText() const
-    {
-        return tr("Dive Angle");
-    }
-    const QString unitText(Units units) const
-    {
+    PlotDiveAngle() : PlotValue(false, Qt::magenta) {}
+    const QString titleText() const { return tr("Dive Angle"); }
+    const QString unitText(Units units) const {
         Q_UNUSED(units);
         return tr("deg");
     }
-    double rawValue(const DataPoint &dp) const
-    {
-        return DataPoint::diveAngle(dp);
-    }
+    double rawValue(const DataPoint& dp) const { return DataPoint::diveAngle(dp); }
 
     bool hasOptimal() const { return true; }
 };
 
-class PlotCurvature: public PlotValue
-{
+class PlotCurvature : public PlotValue {
     Q_OBJECT
 
 public:
-    PlotCurvature(): PlotValue(false, Qt::darkYellow) {}
-    const QString titleText() const
-    {
-        return tr("Dive Rate");
-    }
-    const QString unitText(Units units) const
-    {
+    PlotCurvature() : PlotValue(false, Qt::darkYellow) {}
+    const QString titleText() const { return tr("Dive Rate"); }
+    const QString unitText(Units units) const {
         Q_UNUSED(units);
         return tr("deg/s");
     }
-    double rawValue(const DataPoint &dp) const
-    {
-        return DataPoint::curvature(dp);
-    }
+    double rawValue(const DataPoint& dp) const { return DataPoint::curvature(dp); }
 
     bool hasOptimal() const { return true; }
 };
 
-class PlotGlideRatio: public PlotValue
-{
+class PlotGlideRatio : public PlotValue {
     Q_OBJECT
 
 public:
-    PlotGlideRatio(): PlotValue(false, Qt::darkCyan) {}
-    const QString titleText() const
-    {
-        return tr("Glide Ratio");
-    }
-    const QString unitText(Units units) const
-    {
+    PlotGlideRatio() : PlotValue(false, Qt::darkCyan) {}
+    const QString titleText() const { return tr("Glide Ratio"); }
+    const QString unitText(Units units) const {
         Q_UNUSED(units);
         return QString();
     }
-    double rawValue(const DataPoint &dp) const
-    {
-        return DataPoint::glideRatio(dp);
-    }
+    double rawValue(const DataPoint& dp) const { return DataPoint::glideRatio(dp); }
 
     bool hasOptimal() const { return true; }
 };
 
-class PlotHorizontalAccuracy: public PlotValue
-{
+class PlotHorizontalAccuracy : public PlotValue {
     Q_OBJECT
 
 public:
-    PlotHorizontalAccuracy(): PlotValue(false, Qt::darkRed) {}
-    const QString titleText() const
-    {
-        return tr("Horizontal Accuracy");
+    PlotHorizontalAccuracy() : PlotValue(false, Qt::darkRed) {}
+    const QString titleText() const { return tr("Horizontal Accuracy"); }
+    const QString unitText(Units units) const {
+        if (units == Metric)
+            return tr("m");
+        else
+            return tr("ft");
     }
-    const QString unitText(Units units) const
-    {
-        if (units == Metric) return tr("m");
-        else                 return tr("ft");
-    }
-    double rawValue(const DataPoint &dp) const
-    {
-        return DataPoint::horizontalAccuracy(dp);
-    }
-    double factor(Units units) const
-    {
-        return (units == Metric) ? 1
-                                 : METERS_TO_FEET;
-    }
+    double rawValue(const DataPoint& dp) const { return DataPoint::horizontalAccuracy(dp); }
+    double factor(Units units) const { return (units == Metric) ? 1 : METERS_TO_FEET; }
 };
 
-class PlotVerticalAccuracy: public PlotValue
-{
+class PlotVerticalAccuracy : public PlotValue {
     Q_OBJECT
 
 public:
-    PlotVerticalAccuracy(): PlotValue(false, Qt::darkGreen) {}
-    const QString titleText() const
-    {
-        return tr("Vertical Accuracy");
+    PlotVerticalAccuracy() : PlotValue(false, Qt::darkGreen) {}
+    const QString titleText() const { return tr("Vertical Accuracy"); }
+    const QString unitText(Units units) const {
+        if (units == Metric)
+            return tr("m");
+        else
+            return tr("ft");
     }
-    const QString unitText(Units units) const
-    {
-        if (units == Metric) return tr("m");
-        else                 return tr("ft");
-    }
-    double rawValue(const DataPoint &dp) const
-    {
-        return DataPoint::verticalAccuracy(dp);
-    }
-    double factor(Units units) const
-    {
-        return (units == Metric) ? 1
-                                 : METERS_TO_FEET;
-    }
+    double rawValue(const DataPoint& dp) const { return DataPoint::verticalAccuracy(dp); }
+    double factor(Units units) const { return (units == Metric) ? 1 : METERS_TO_FEET; }
 };
 
-class PlotSpeedAccuracy: public PlotValue
-{
+class PlotSpeedAccuracy : public PlotValue {
     Q_OBJECT
 
 public:
-    PlotSpeedAccuracy(): PlotValue(false, Qt::darkBlue) {}
-    const QString titleText() const
-    {
-        return tr("Speed Accuracy");
+    PlotSpeedAccuracy() : PlotValue(false, Qt::darkBlue) {}
+    const QString titleText() const { return tr("Speed Accuracy"); }
+    const QString unitText(Units units) const {
+        if (units == Metric)
+            return tr("km/h");
+        else
+            return tr("mph");
     }
-    const QString unitText(Units units) const
-    {
-        if (units == Metric) return tr("km/h");
-        else                 return tr("mph");
-    }
-    double rawValue(const DataPoint &dp) const
-    {
-        return DataPoint::speedAccuracy(dp);
-    }
-    double factor(Units units) const
-    {
-        return (units == Metric) ? MPS_TO_KMH
-                                 : MPS_TO_MPH;
-    }
+    double rawValue(const DataPoint& dp) const { return DataPoint::speedAccuracy(dp); }
+    double factor(Units units) const { return (units == Metric) ? MPS_TO_KMH : MPS_TO_MPH; }
 };
 
-class PlotNumberOfSatellites: public PlotValue
-{
+class PlotNumberOfSatellites : public PlotValue {
     Q_OBJECT
 
 public:
-    PlotNumberOfSatellites(): PlotValue(false, Qt::darkMagenta) {}
-    const QString titleText() const
-    {
-        return tr("Number of Satellites");
-    }
-    const QString unitText(Units units) const
-    {
+    PlotNumberOfSatellites() : PlotValue(false, Qt::darkMagenta) {}
+    const QString titleText() const { return tr("Number of Satellites"); }
+    const QString unitText(Units units) const {
         Q_UNUSED(units);
         return QString();
     }
-    double rawValue(const DataPoint &dp) const
-    {
-        return DataPoint::numberOfSatellites(dp);
-    }
+    double rawValue(const DataPoint& dp) const { return DataPoint::numberOfSatellites(dp); }
 };
 
-class PlotTime: public PlotValue
-{
+class PlotTime : public PlotValue {
     Q_OBJECT
 
 public:
-    PlotTime(): PlotValue(false, Qt::black) {}
-    const QString titleText() const
-    {
-        return tr("Time");
-    }
-    const QString unitText(Units units) const
-    {
+    PlotTime() : PlotValue(false, Qt::black) {}
+    const QString titleText() const { return tr("Time"); }
+    const QString unitText(Units units) const {
         Q_UNUSED(units);
         return tr("s");
     }
-    double rawValue(const DataPoint &dp) const
-    {
-        return DataPoint::time(dp);
-    }
+    double rawValue(const DataPoint& dp) const { return DataPoint::time(dp); }
 
     bool hasOptimal() const { return true; }
 };
 
-class PlotDistance2D: public PlotValue
-{
+class PlotDistance2D : public PlotValue {
     Q_OBJECT
 
 public:
-    PlotDistance2D(): PlotValue(false, Qt::black) {}
-    const QString titleText() const
-    {
-        return tr("Horizontal Distance");
+    PlotDistance2D() : PlotValue(false, Qt::black) {}
+    const QString titleText() const { return tr("Horizontal Distance"); }
+    const QString unitText(Units units) const {
+        if (units == Metric)
+            return tr("m");
+        else
+            return tr("ft");
     }
-    const QString unitText(Units units) const
-    {
-        if (units == Metric) return tr("m");
-        else                 return tr("ft");
-    }
-    double rawValue(const DataPoint &dp) const
-    {
-        return DataPoint::distance2D(dp);
-    }
-    double factor(Units units) const
-    {
-        return (units == Metric) ? 1
-                                 : METERS_TO_FEET;
-    }
+    double rawValue(const DataPoint& dp) const { return DataPoint::distance2D(dp); }
+    double factor(Units units) const { return (units == Metric) ? 1 : METERS_TO_FEET; }
 
     bool hasOptimal() const { return true; }
 };
 
-class PlotDistance3D: public PlotValue
-{
+class PlotDistance3D : public PlotValue {
     Q_OBJECT
 
 public:
-    PlotDistance3D(): PlotValue(false, Qt::black) {}
-    const QString titleText() const
-    {
-        return tr("Total Distance");
+    PlotDistance3D() : PlotValue(false, Qt::black) {}
+    const QString titleText() const { return tr("Total Distance"); }
+    const QString unitText(Units units) const {
+        if (units == Metric)
+            return tr("m");
+        else
+            return tr("ft");
     }
-    const QString unitText(Units units) const
-    {
-        if (units == Metric) return tr("m");
-        else                 return tr("ft");
-    }
-    double rawValue(const DataPoint &dp) const
-    {
-        return DataPoint::distance3D(dp);
-    }
-    double factor(Units units) const
-    {
-        return (units == Metric) ? 1
-                                 : METERS_TO_FEET;
-    }
+    double rawValue(const DataPoint& dp) const { return DataPoint::distance3D(dp); }
+    double factor(Units units) const { return (units == Metric) ? 1 : METERS_TO_FEET; }
 
     bool hasOptimal() const { return true; }
 };
 
-class PlotAcceleration: public PlotValue
-{
+class PlotAcceleration : public PlotValue {
     Q_OBJECT
 
 public:
-    PlotAcceleration(): PlotValue(false, Qt::darkRed) {}
-    const QString titleText() const
-    {
-        return tr("Acceleration");
-    }
-    const QString unitText(Units units) const
-    {
+    PlotAcceleration() : PlotValue(false, Qt::darkRed) {}
+    const QString titleText() const { return tr("Acceleration"); }
+    const QString unitText(Units units) const {
         Q_UNUSED(units);
         return tr("m/s^2");
     }
-    double rawValue(const DataPoint &dp) const
-    {
-        return DataPoint::acceleration(dp);
-    }
+    double rawValue(const DataPoint& dp) const { return DataPoint::acceleration(dp); }
 
     bool hasOptimal() const { return true; }
 };
 
-class PlotAccForward: public PlotValue
-{
+class PlotAccForward : public PlotValue {
     Q_OBJECT
 
 public:
-    PlotAccForward(): PlotValue(false, Qt::darkRed) {}
-    const QString titleText() const
-    {
-        return tr("Acceleration Forward");
-    }
-    const QString unitText(Units units) const
-    {
+    PlotAccForward() : PlotValue(false, Qt::darkRed) {}
+    const QString titleText() const { return tr("Acceleration Forward"); }
+    const QString unitText(Units units) const {
         Q_UNUSED(units);
         return tr("m/s^2");
     }
-    double rawValue(const DataPoint &dp) const
-    {
-        return DataPoint::accForward(dp);
-    }
+    double rawValue(const DataPoint& dp) const { return DataPoint::accForward(dp); }
 
     bool hasOptimal() const { return true; }
 };
 
-class PlotAccRight: public PlotValue
-{
+class PlotAccRight : public PlotValue {
     Q_OBJECT
 
 public:
-    PlotAccRight(): PlotValue(false, Qt::darkGreen) {}
-    const QString titleText() const
-    {
-        return tr("Acceleration Right");
-    }
-    const QString unitText(Units units) const
-    {
+    PlotAccRight() : PlotValue(false, Qt::darkGreen) {}
+    const QString titleText() const { return tr("Acceleration Right"); }
+    const QString unitText(Units units) const {
         Q_UNUSED(units);
         return tr("m/s^2");
     }
-    double rawValue(const DataPoint &dp) const
-    {
-        return DataPoint::accRight(dp);
-    }
+    double rawValue(const DataPoint& dp) const { return DataPoint::accRight(dp); }
 
     bool hasOptimal() const { return true; }
 };
 
-class PlotAccDown: public PlotValue
-{
+class PlotAccDown : public PlotValue {
     Q_OBJECT
 
 public:
-    PlotAccDown(): PlotValue(false, Qt::darkBlue) {}
-    const QString titleText() const
-    {
-        return tr("Acceleration Down");
-    }
-    const QString unitText(Units units) const
-    {
+    PlotAccDown() : PlotValue(false, Qt::darkBlue) {}
+    const QString titleText() const { return tr("Acceleration Down"); }
+    const QString unitText(Units units) const {
         Q_UNUSED(units);
         return tr("m/s^2");
     }
-    double rawValue(const DataPoint &dp) const
-    {
-        return DataPoint::accDown(dp);
-    }
+    double rawValue(const DataPoint& dp) const { return DataPoint::accDown(dp); }
 
     bool hasOptimal() const { return true; }
 };
 
-class PlotAccMagnitude: public PlotValue
-{
+class PlotAccMagnitude : public PlotValue {
     Q_OBJECT
 
 public:
-    PlotAccMagnitude(): PlotValue(false, Qt::gray) {}
-    const QString titleText() const
-    {
-        return tr("Acceleration Magnitude");
-    }
-    const QString unitText(Units units) const
-    {
+    PlotAccMagnitude() : PlotValue(false, Qt::gray) {}
+    const QString titleText() const { return tr("Acceleration Magnitude"); }
+    const QString unitText(Units units) const {
         Q_UNUSED(units);
         return tr("m/s^2");
     }
-    double rawValue(const DataPoint &dp) const
-    {
-        return DataPoint::accMagnitude(dp);
-    }
+    double rawValue(const DataPoint& dp) const { return DataPoint::accMagnitude(dp); }
 
     bool hasOptimal() const { return true; }
 };
 
-class PlotTotalEnergy: public PlotValue
-{
+class PlotTotalEnergy : public PlotValue {
     Q_OBJECT
 
 public:
-    PlotTotalEnergy(): PlotValue(false, Qt::darkGreen) {}
-    const QString titleText() const
-    {
-        return tr("Total Energy");
-    }
-    const QString unitText(Units units) const
-    {
+    PlotTotalEnergy() : PlotValue(false, Qt::darkGreen) {}
+    const QString titleText() const { return tr("Total Energy"); }
+    const QString unitText(Units units) const {
         Q_UNUSED(units);
         return tr("J/kg");
     }
-    double rawValue(const DataPoint &dp) const
-    {
-        return DataPoint::totalEnergy(dp);
-    }
+    double rawValue(const DataPoint& dp) const { return DataPoint::totalEnergy(dp); }
 
     bool hasOptimal() const { return true; }
 };
 
-class PlotEnergyRate: public PlotValue
-{
+class PlotEnergyRate : public PlotValue {
     Q_OBJECT
 
 public:
-    PlotEnergyRate(): PlotValue(false, Qt::darkBlue) {}
-    const QString titleText() const
-    {
-        return tr("Energy Rate");
-    }
-    const QString unitText(Units units) const
-    {
+    PlotEnergyRate() : PlotValue(false, Qt::darkBlue) {}
+    const QString titleText() const { return tr("Energy Rate"); }
+    const QString unitText(Units units) const {
         Q_UNUSED(units);
         return tr("J/kg/s");
     }
-    double rawValue(const DataPoint &dp) const
-    {
-        return DataPoint::energyRate(dp);
-    }
+    double rawValue(const DataPoint& dp) const { return DataPoint::energyRate(dp); }
 
     bool hasOptimal() const { return true; }
 };
 
-class PlotLift: public PlotValue
-{
+class PlotLift : public PlotValue {
     Q_OBJECT
 
 public:
-    PlotLift(): PlotValue(false, Qt::darkGreen) {}
-    const QString titleText() const
-    {
-        return tr("Lift Coefficient");
-    }
-    const QString unitText(Units units) const
-    {
+    PlotLift() : PlotValue(false, Qt::darkGreen) {}
+    const QString titleText() const { return tr("Lift Coefficient"); }
+    const QString unitText(Units units) const {
         Q_UNUSED(units);
         return QString();
     }
-    double rawValue(const DataPoint &dp) const
-    {
-        return DataPoint::liftCoefficient(dp);
-    }
+    double rawValue(const DataPoint& dp) const { return DataPoint::liftCoefficient(dp); }
 
     bool hasOptimal() const { return true; }
 };
 
-class PlotDrag: public PlotValue
-{
+class PlotDrag : public PlotValue {
     Q_OBJECT
 
 public:
-    PlotDrag(): PlotValue(false, Qt::darkBlue) {}
-    const QString titleText() const
-    {
-        return tr("Drag Coefficient");
-    }
-    const QString unitText(Units units) const
-    {
+    PlotDrag() : PlotValue(false, Qt::darkBlue) {}
+    const QString titleText() const { return tr("Drag Coefficient"); }
+    const QString unitText(Units units) const {
         Q_UNUSED(units);
         return QString();
     }
-    double rawValue(const DataPoint &dp) const
-    {
-        return DataPoint::dragCoefficient(dp);
-    }
+    double rawValue(const DataPoint& dp) const { return DataPoint::dragCoefficient(dp); }
 
     bool hasOptimal() const { return true; }
 };
 
-class PlotCourse: public PlotValue
-{
+class PlotCourse : public PlotValue {
     Q_OBJECT
 
 public:
-    PlotCourse(): PlotValue(false, Qt::cyan) {}
-    const QString titleText() const
-    {
-        return tr("Course");
-    }
-    const QString unitText(Units units) const
-    {
+    PlotCourse() : PlotValue(false, Qt::cyan) {}
+    const QString titleText() const { return tr("Course"); }
+    const QString unitText(Units units) const {
         Q_UNUSED(units);
         return tr("deg");
     }
-    double rawValue(const DataPoint &dp) const
-    {
-        return DataPoint::course(dp);
-    }
+    double rawValue(const DataPoint& dp) const { return DataPoint::course(dp); }
 
     bool hasOptimal() const { return false; }
 };
 
-class PlotCourseRate: public PlotValue
-{
+class PlotCourseRate : public PlotValue {
     Q_OBJECT
 
 public:
-    PlotCourseRate(): PlotValue(false, Qt::darkCyan) {}
-    const QString titleText() const
-    {
-        return tr("Course Rate");
-    }
-    const QString unitText(Units units) const
-    {
+    PlotCourseRate() : PlotValue(false, Qt::darkCyan) {}
+    const QString titleText() const { return tr("Course Rate"); }
+    const QString unitText(Units units) const {
         Q_UNUSED(units);
         return tr("deg/s");
     }
-    double rawValue(const DataPoint &dp) const
-    {
-        return DataPoint::courseRate(dp);
-    }
+    double rawValue(const DataPoint& dp) const { return DataPoint::courseRate(dp); }
 
     bool hasOptimal() const { return false; }
 };
 
-class PlotCourseAccuracy: public PlotValue
-{
+class PlotCourseAccuracy : public PlotValue {
     Q_OBJECT
 
 public:
-    PlotCourseAccuracy(): PlotValue(false, Qt::darkYellow) {}
-    const QString titleText() const
-    {
-        return tr("Course Accuracy");
-    }
-    const QString unitText(Units units) const
-    {
+    PlotCourseAccuracy() : PlotValue(false, Qt::darkYellow) {}
+    const QString titleText() const { return tr("Course Accuracy"); }
+    const QString unitText(Units units) const {
         Q_UNUSED(units);
         return tr("deg");
     }
-    double rawValue(const DataPoint &dp) const
-    {
-        return DataPoint::courseAccuracy(dp);
-    }
+    double rawValue(const DataPoint& dp) const { return DataPoint::courseAccuracy(dp); }
 
     bool hasOptimal() const { return false; }
 };

@@ -5,11 +5,10 @@
 
 class Config;
 
-class Nav
-{
+class Nav {
 public:
     static int32_t calcDistance(int32_t lat1, int32_t lon1, int32_t lat2, int32_t lon2);
-    static int calcDirection(const Config &config, int32_t lat, int32_t lon, int32_t chead);
+    static int calcDirection(const Config& config, int32_t lat, int32_t lon, int32_t chead);
     static int calcRelBearing(int bearing, int heading);
 
 private:
