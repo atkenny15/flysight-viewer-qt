@@ -29,6 +29,7 @@
 #include <QColor>
 #include <QSettings>
 #include <QString>
+#include <flysight/data_point.hh>
 
 #define METERS_TO_FEET 3.28084
 #define MPS_TO_MPH 2.23694
@@ -59,9 +60,11 @@ public:
     const QColor& color() const { return mColor; }
     const QColor& defaultColor() const { return mDefaultColor; }
 
-    double value(const DataPoint& dp, Units units) const { return rawValue(dp) * factor(units); }
+    double value(const flysight::DataPoint& dp, Units units) const {
+        return rawValue(dp) * factor(units);
+    }
 
-    virtual double rawValue(const DataPoint& dp) const = 0;
+    virtual double rawValue(const flysight::DataPoint& dp) const = 0;
     virtual double factor(Units units) const {
         Q_UNUSED(units);
         return 1;

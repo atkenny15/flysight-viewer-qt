@@ -34,7 +34,9 @@
 #include <QSqlDatabase>
 #include <QStack>
 #include <QVector>
-#include <flysight/track.hh>
+#ifndef Q_MOC_RUN
+#    include <flysight/track.hh>
+#endif
 
 class MapView;
 class QCPRange;
@@ -76,15 +78,11 @@ public:
     explicit MainWindow(QWidget* parent = 0);
     ~MainWindow();
 
-    const DataPoints& data() const { return m_data; }
-    int dataSize() const { return m_data.size(); }
-    const DataPoint& dataPoint(int i) const { return m_data[i]; }
-
     PlotValue::Units units() const { return m_units; }
 
     void setRange(double lower, double upper, bool immediate = false);
-    double rangeLower() const { return mZoomLevel.rangeLower; }
-    double rangeUpper() const { return mZoomLevel.rangeUpper; }
+    auto rangeLower() const { return mZoomLevel.rangeLower; }
+    auto rangeUpper() const { return mZoomLevel.rangeUpper; }
 
     void setZero(double t);
     void setGround(double t);
@@ -125,10 +123,6 @@ public:
 
     DataPoint interpolateDataT(double t);
 
-    int findIndexBelowT(double t);
-    int findIndexAboveT(double t);
-    int findIndexForLanding();
-
     void setWindowMode(WindowMode mode);
     WindowMode windowMode() const { return mWindowMode; }
 
@@ -145,12 +139,6 @@ public:
     void setMinDrag(double minDrag);
     void setMaxLift(double maxLift);
     void setMaxLD(double maxLD);
-
-    const DataPoints& optimal() const { return m_optimal; }
-    void setOptimal(const DataPoints& result);
-
-    int optimalSize() const { return m_optimal.size(); }
-    const DataPoint& optimalPoint(int i) const { return m_optimal[i]; }
 
     DataPlot* plotArea() const;
 
@@ -192,6 +180,8 @@ public:
 
     void setMapMode(MapMode newMapMode);
     MapMode mapMode() const { return mMapMode; }
+
+    const std::optional<flysight::Track>& track() const noexcept { return m_track; }
 
 protected:
     void hideEvent(QHideEvent* event);
@@ -257,13 +247,13 @@ private slots:
 
 private:
     typedef struct {
-        double rangeLower;
-        double rangeUpper;
+        flysight::DataPoint::Time rangeLower;
+        flysight::DataPoint::Time rangeUpper;
     } ZoomLevel;
 
     Ui::MainWindow* m_ui;
-    DataPoints m_data;
-    DataPoints m_optimal;
+
+    std::optional<flysight::Track> m_track;
 
     double mMarkStart;
     double mMarkEnd;
@@ -286,8 +276,9 @@ private:
     QStack<ZoomLevel> mZoomLevelUndo;
     QStack<ZoomLevel> mZoomLevelRedo;
 
-    double mRangeLower;
-    double mRangeUpper;
+    // TODO(akenny): Can these be removed?
+    // double mRangeLower;
+    // double mRangeUpper;
 
     WindowMode mWindowMode;
 
@@ -350,14 +341,6 @@ private:
                         DataView::Direction direction);
 
     void import(QIODevice* device, DataPoints& data, QString trackName, bool initDatabase);
-    void initTime(DataPoints& data);
-    void initExit(DataPoints& data, QString trackName, bool initDatabase);
-    void initAltitude(DataPoints& data, QString trackName, bool initDatabase);
-    void initAcceleration(DataPoints& data);
-    void updateVelocity(DataPoints& data, QString trackName, bool initDatabase);
-    void initAerodynamics(DataPoints& data);
-
-    double getSlope(const int center, double (*value)(const DataPoint&)) const;
 
     void initRange(QString trackName);
 

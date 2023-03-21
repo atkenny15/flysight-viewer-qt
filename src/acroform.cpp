@@ -30,7 +30,8 @@
 #include "plotvalue.h"
 #include "ui_acroform.h"
 
-#define METERS_TO_FEET 3.280839895
+using namespace units::isq::si::references;
+using namespace units::isq::si::fps::length_references;
 
 AcroForm::AcroForm(QWidget* parent) : QWidget(parent), ui(new Ui::AcroForm), mMainWindow(0) {
     ui->setupUi(this);
@@ -55,30 +56,34 @@ void AcroForm::setMainWindow(MainWindow* mainWindow) {
 }
 
 void AcroForm::updateView() {
-    if (mMainWindow->dataSize() == 0)
+    const auto& maybe_track = mMainWindow->track();
+    if (maybe_track)
         return;
+    const auto& track = *maybe_track;
 
     AcroScoring* method = (AcroScoring*)mMainWindow->scoringMethod(MainWindow::Acro);
 
-    const double speed = method->speed();
-    const double altitude = method->altitude();
+    const double speed = flysight::convert::get_speed_kmph(method->speed());
+    const double altitude = flysight::convert::get_length_ft(method->altitude());
 
     // Update window bounds
     ui->speedEdit->setText(QString("%1").arg(speed));
-    ui->altitudeEdit->setText(QString("%1").arg(altitude * METERS_TO_FEET));
+    ui->altitudeEdit->setText(QString("%1").arg(altitude));
 
-    DataPoint dpBottom, dpTop;
+    flysight::DataPoint dpBottom, dpTop;
     bool success = false;
 
     switch (mMainWindow->windowMode()) {
         case MainWindow::Actual:
-            success = method->getWindowBounds(mMainWindow->data(), dpBottom, dpTop);
+        case MainWindow::Optimal:
+            success = method->getWindowBounds(track, dpBottom, dpTop);
             break;
     }
 
     if (success) {
         // Update display
-        ui->timeEdit->setText(QString("%1").arg(dpBottom.t - dpTop.t, 0, 'f', 1));
+        ui->timeEdit->setText(
+            QString("%1").arg(flysight::convert::get_time_s(dpBottom.t - dpTop.t), 0, 'f', 1));
     }
     else {
         // Update display
@@ -88,13 +93,13 @@ void AcroForm::updateView() {
 
 void AcroForm::onFAIButtonClicked() {
     AcroScoring* method = (AcroScoring*)mMainWindow->scoringMethod(MainWindow::Acro);
-    method->setSpeed(8);
-    method->setAltitude(2286);
+    method->setSpeed(8 * (m / s));
+    method->setAltitude(2286 * m);
 }
 
 void AcroForm::onApplyButtonClicked() {
-    double speed = ui->speedEdit->text().toDouble();
-    double altitude = ui->altitudeEdit->text().toDouble() / METERS_TO_FEET;
+    const auto speed = ui->speedEdit->text().toDouble() * (m / s);
+    const auto altitude = ui->altitudeEdit->text().toDouble() * ft;
 
     AcroScoring* method = (AcroScoring*)mMainWindow->scoringMethod(MainWindow::Acro);
     method->setSpeed(speed);

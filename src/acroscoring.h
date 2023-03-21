@@ -25,6 +25,7 @@
 #define ACROSCORING_H
 
 #include "scoringmethod.h"
+#include <flysight/track.hh>
 
 class MainWindow;
 
@@ -32,22 +33,22 @@ class AcroScoring : public ScoringMethod {
 public:
     AcroScoring(MainWindow* mainWindow);
 
-    double speed(void) const { return mSpeed; }
-    void setSpeed(double speed);
+    auto speed() const noexcept { return mSpeed; }
+    void setSpeed(flysight::DataPoint::Speed speed);
 
-    double altitude(void) const { return mAltitude; }
-    void setAltitude(double altitude);
+    auto altitude() const noexcept { return mAltitude; }
+    void setAltitude(flysight::DataPoint::Length altitude);
 
     void prepareDataPlot(DataPlot* plot);
 
-    bool getWindowBounds(const MainWindow::DataPoints& result, DataPoint& dpBottom,
-                         DataPoint& dpTop);
+    bool getWindowBounds(const flysight::Track& result, flysight::DataPoint& dpBottom,
+                         flysight::DataPoint& dpTop);
 
 private:
     MainWindow* mMainWindow;
 
-    double mSpeed;
-    double mAltitude;
+    flysight::DataPoint::Speed mSpeed;
+    flysight::DataPoint::Length mAltitude;
 
     int findIndexBelowT(const MainWindow::DataPoints& result, double t);
 

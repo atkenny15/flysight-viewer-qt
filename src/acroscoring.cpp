@@ -25,38 +25,43 @@
 
 #include "mainwindow.h"
 
+using namespace units::isq::si::references;
+
 AcroScoring::AcroScoring(MainWindow* mainWindow) :
-    ScoringMethod(mainWindow), mMainWindow(mainWindow), mSpeed(8), mAltitude(2286) {
+    ScoringMethod(mainWindow), mMainWindow(mainWindow), mSpeed(8 * (m / s)), mAltitude(2286 * m) {
 }
 
-void AcroScoring::setSpeed(double speed) {
+void AcroScoring::setSpeed(flysight::DataPoint::Speed speed) {
     mSpeed = speed;
     emit scoringChanged();
 }
 
-void AcroScoring::setAltitude(double altitude) {
+void AcroScoring::setAltitude(flysight::DataPoint::Length altitude) {
     mAltitude = altitude;
     emit scoringChanged();
 }
 
 void AcroScoring::prepareDataPlot(DataPlot* plot) {
     // Return now if plot empty
-    if (mMainWindow->dataSize() == 0)
+    const auto& maybe_track = mMainWindow->track();
+    if (!maybe_track || maybe_track->data().empty())
         return;
+    const auto& track = *maybe_track;
 
-    DataPoint dpBottom, dpTop;
+    flysight::DataPoint dpBottom, dpTop;
     bool success = false;
 
     switch (mMainWindow->windowMode()) {
         case MainWindow::Actual:
-            success = getWindowBounds(mMainWindow->data(), dpBottom, dpTop);
+        case MainWindow::Optimal:
+            success = getWindowBounds(track, dpBottom, dpTop);
             break;
     }
 
     // Add shading for scoring window
     if (success && plot->yValue(DataPlot::Elevation)->visible()) {
-        DataPoint dpLower = mMainWindow->interpolateDataT(mMainWindow->rangeLower());
-        DataPoint dpUpper = mMainWindow->interpolateDataT(mMainWindow->rangeUpper());
+        const auto dpLower = track.interpolate_t(mMainWindow->rangeLower());
+        const auto dpUpper = track.interpolate_t(mMainWindow->rangeUpper());
 
         const double xMin = plot->xValue()->value(dpLower, mMainWindow->units());
         const double xMax = plot->xValue()->value(dpUpper, mMainWindow->units());
@@ -111,41 +116,43 @@ void AcroScoring::prepareDataPlot(DataPlot* plot) {
     }
 }
 
-bool AcroScoring::getWindowBounds(const MainWindow::DataPoints& result, DataPoint& dpBottom,
-                                  DataPoint& dpTop) {
-    const int iExit = qMax(0, findIndexBelowT(result, 0));
+bool AcroScoring::getWindowBounds(const flysight::Track& track, flysight::DataPoint& dpBottom,
+                                  flysight::DataPoint& dpTop) {
+    const size_t iExit = track.find_index_below_t(0 * s);
+    const auto& data = track.data();
 
-    int iStart;
-    for (iStart = iExit; iStart < result.size(); ++iStart) {
-        const DataPoint& dp = result[iStart];
-        if (dp.velD > mSpeed)
+    size_t iStart;
+    for (iStart = iExit; iStart < data.size(); ++iStart) {
+        const auto& dp = data[iStart];
+        if (dp.velocity_down > mSpeed)
             break;
     }
 
-    if (iStart == result.size())
+    if (iStart == data.size())
         return false;
 
-    const DataPoint& dp1 = result[iStart - 1];
-    const DataPoint& dp2 = result[iStart];
-    dpTop = DataPoint::interpolate(dp1, dp2, (mSpeed - dp1.velD) / (dp2.velD - dp1.velD));
+    const auto& dp1 = data[iStart - 1];
+    const auto& dp2 = data[iStart];
+    dpTop = dp1.interpolate(dp2,
+                            (mSpeed - dp1.velocity_down) / (dp2.velocity_down - dp1.velocity_down));
 
     if ((dpTop.t < dp1.t) || (dpTop.t > dp2.t))
         return false;
 
-    int iEnd;
-    for (iEnd = iStart; iEnd < result.size(); ++iEnd) {
-        const DataPoint& dp = result[iEnd];
-        if (dp.hMSL < dpTop.hMSL - mAltitude)
+    size_t iEnd;
+    for (iEnd = iStart; iEnd < data.size(); ++iEnd) {
+        const auto& dp = data[iEnd];
+        if (dp.height_msl < dpTop.height_msl - mAltitude)
             break;
     }
 
-    if (iEnd == result.size())
+    if (iEnd == data.size())
         return false;
 
-    const DataPoint& dp3 = result[iEnd - 1];
-    const DataPoint& dp4 = result[iEnd];
-    dpBottom = DataPoint::interpolate(dp3, dp4,
-                                      (dpTop.hMSL - mAltitude - dp3.hMSL) / (dp4.hMSL - dp3.hMSL));
+    const auto& dp3 = data[iEnd - 1];
+    const auto& dp4 = data[iEnd];
+    dpBottom = dp3.interpolate(dp4, (dpTop.height_msl - mAltitude - dp3.height_msl) /
+                                        (dp4.height_msl - dp3.height_msl));
 
     if ((dpBottom.t < dp3.t) || (dpBottom.t > dp4.t))
         return false;
