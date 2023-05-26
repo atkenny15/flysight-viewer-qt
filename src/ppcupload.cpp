@@ -110,7 +110,7 @@ void PPCUpload::upload(const QString type, const double windowTop, const double 
 
     QNetworkAccessManager *naManager = new QNetworkAccessManager(this);
     connect(naManager,SIGNAL(finished(QNetworkReply*)),this,SLOT(finished(QNetworkReply*)));
-    naManager->post(request, post.toAscii());
+    naManager->post(request, post.toUtf8());
 }
 
 void PPCUpload::finished(QNetworkReply *reply) {
