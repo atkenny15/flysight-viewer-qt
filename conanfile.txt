@@ -1,0 +1,6 @@
+[requires]
+flysight/0.0.1
+
+[generators]
+CMakeDeps
+CMakeToolchain

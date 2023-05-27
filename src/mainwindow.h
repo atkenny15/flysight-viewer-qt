@@ -80,6 +80,11 @@ public:
 
     PlotValue::Units units() const { return m_units; }
 
+    const std::optional<flysight::Track>& get_track() const noexcept { return m_track; }
+    const std::optional<flysight::Track>& get_optimal_track() const noexcept {
+        return m_optimal_track;
+    }
+
     void setRange(double lower, double upper, bool immediate = false);
     auto rangeLower() const { return mZoomLevel.rangeLower; }
     auto rangeUpper() const { return mZoomLevel.rangeUpper; }
@@ -95,21 +100,21 @@ public:
     void setTool(Tool tool);
     Tool tool() const { return mTool; }
 
-    double markStart() const { return mMarkStart; }
-    double markEnd() const { return mMarkEnd; }
+    flysight::DataPoint::Time markStart() const noexcept { return mMarkStart; }
+    flysight::DataPoint::Time markEnd() const noexcept { return mMarkEnd; }
     bool markActive() const { return mMarkActive; }
 
     void setRotation(double rotation);
-    double rotation() const { return m_viewDataRotation; }
+    double rotation() const noexcept { return m_viewDataRotation; }
 
-    int waypointSize() const { return m_waypoints.size(); }
-    const DataPoint& waypoint(int i) const { return m_waypoints[i]; }
+    int waypointSize() const noexcept { return m_waypoints.size(); }
+    const DataPoint& waypoint(int i) const noexcept { return m_waypoints[i]; }
 
     double getDistance(const DataPoint& dp1, const DataPoint& dp2);
     double getBearing(const DataPoint& dp1, const DataPoint& dp2);
 
-    void setMark(double start, double end);
-    void setMark(double mark);
+    void setMark(flysight::DataPoint::Time start, flysight::DataPoint::Time end);
+    void setMark(flysight::DataPoint::Time mark);
     void clearMark();
 
     void setMediaCursor(double mediaCursor);
@@ -254,9 +259,10 @@ private:
     Ui::MainWindow* m_ui;
 
     std::optional<flysight::Track> m_track;
+    std::optional<flysight::Track> m_optimal_track;
 
-    double mMarkStart;
-    double mMarkEnd;
+    flysight::DataPoint::Time mMarkStart;
+    flysight::DataPoint::Time mMarkEnd;
     bool mMarkActive;
 
     double mMediaCursor;
@@ -312,7 +318,7 @@ private:
 
     QString mTrackName;
     QVector<QString> mSelectedTracks;
-    QMap<QString, DataPoints> mCheckedTracks;
+    QMap<QString, flysight::Track> mCheckedTracks;
 
     QTimer* zoomTimer;
 
@@ -340,7 +346,7 @@ private:
     void initSingleView(const QString& title, const QString& objectName, QAction* actionShow,
                         DataView::Direction direction);
 
-    void import(QIODevice* device, DataPoints& data, QString trackName, bool initDatabase);
+    flysight::Track import(QIODevice* device, QString trackName, bool initDatabase);
 
     void initRange(QString trackName);
 

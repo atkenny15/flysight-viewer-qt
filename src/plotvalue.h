@@ -29,7 +29,10 @@
 #include <QColor>
 #include <QSettings>
 #include <QString>
+
+#ifndef Q_MOC_RUN
 #include <flysight/data_point.hh>
+#endif
 
 #define METERS_TO_FEET 3.28084
 #define MPS_TO_MPH 2.23694

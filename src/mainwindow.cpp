@@ -662,10 +662,11 @@ void MainWindow::importFile(QString fileName) {
 
     // Read file data
     temporaryFile.seek(0);
-    import(&temporaryFile, m_data, uniqueName, true);
+    m_track = std::make_optional(import(&temporaryFile, uniqueName, true));
+    const auto& track_data = m_track->data();
 
     // Clear optimum
-    m_optimal.clear();
+    m_optimal_track.reset();
 
     // Initialize plot ranges
     initRange(uniqueName);
@@ -673,24 +674,28 @@ void MainWindow::importFile(QString fileName) {
     emit dataLoaded();
 
     // If the file is not already in the database
-    if (!isPresent) {
+    if (!track_data.empty() && !isPresent) {
         QDir(mDatabasePath).mkpath("FlySight/Tracks");
 
         if (temporaryFile.copy(newPath)) {
-            QDateTime startTime = m_data.front().dateTime;
-            qint64 duration = startTime.msecsTo(m_data.back().dateTime);
+            const auto duration = track_data.back().time - track_data.front().time;
+
+            using TimeNs = units::isq::si::time<units::isq::si::nanosecond, double>;
+            auto get_ns_int = [](const TimeNs t) -> uint64_t {
+                return static_cast<uint64_t>(t.number());
+            };
 
             int minLat = 900000000, maxLat = -900000000;
             int minLon = 1800000000, maxLon = -1800000000;
 
-            QVector<double> dt;
-            for (int i = 0; i < m_data.size(); ++i) {
+            QVector<flysight::DataPoint::Time> dt;
+            for (int i = 0; i < track_data.size(); ++i) {
                 if (i > 0) {
-                    dt.push_back(m_data[i - 1].dateTime.msecsTo(m_data[i].dateTime));
+                    dt.push_back(track_data[i - 1].time);
                 }
 
-                int lat = m_data[i].lat * 10000000;
-                int lon = m_data[i].lon * 10000000;
+                int lat = track_data[i].latitude.number() * 10000000;
+                int lon = track_data[i].longitude.number() * 10000000;
 
                 if (lat < minLat)
                     minLat = lat;
@@ -702,7 +707,7 @@ void MainWindow::importFile(QString fileName) {
                     maxLon = lon;
             }
             qSort(dt);
-            qint64 samplePeriod = dt[dt.size() / 2];
+            const TimeNs samplePeriod = dt[dt.size() / 2];
 
             QDateTime importTime = QDateTime::currentDateTime();
 
@@ -718,9 +723,9 @@ void MainWindow::importFile(QString fileName) {
                                     "import_time='%9' "
                                     "where file_name='%10'")
                                 .arg(QFileInfo(fileName).fileName())
-                                .arg(dateTimeToUTC(startTime))
-                                .arg(duration)
-                                .arg(samplePeriod)
+                                .arg(QString::fromStdString(track_data.front().utc_str()))
+                                .arg(get_ns_int(duration))
+                                .arg(get_ns_int(samplePeriod))
                                 .arg(minLat)
                                 .arg(maxLat)
                                 .arg(minLon)
@@ -756,10 +761,10 @@ void MainWindow::importFromDatabase(const QString& uniqueName) {
     }
 
     // Read file data
-    import(&file, m_data, uniqueName, false);
+    m_track = std::make_optional(import(&file, uniqueName, false));
 
     // Clear optimum
-    m_optimal.clear();
+    m_optimal_track.reset();
 
     // Initialize plot ranges
     initRange(uniqueName);
@@ -842,10 +847,10 @@ QDateTime MainWindow::trackStartTime(const QString& trackName) {
 
 void MainWindow::setTrackChecked(const QString& trackName, bool checked) {
     if (checked) {
-        DataPoints data;
+        std::optional<flysight::Track> track;
 
-        if (trackName == mTrackName) {
-            data = m_data;
+        if (trackName == mTrackName && m_track) {
+            track = std::make_optional(*m_track);
         }
         else {
             // Get name of file in database
@@ -859,10 +864,12 @@ void MainWindow::setTrackChecked(const QString& trackName, bool checked) {
             }
 
             // Read file data
-            import(&file, data, trackName, false);
+            track = std::make_optional(import(&file, trackName, false));
         }
 
-        mCheckedTracks.insert(trackName, data);
+        if (track) {
+            mCheckedTracks.insert(trackName, std::move(*track));
+        }
     }
     else {
         mCheckedTracks.remove(trackName);
@@ -877,10 +884,10 @@ bool MainWindow::trackChecked(const QString& trackName) const {
 
 void MainWindow::importFromCheckedTrack(const QString& uniqueName) {
     // Copy track data
-    m_data = mCheckedTracks[uniqueName];
+    m_track = mCheckedTracks[uniqueName];
 
     // Clear optimum
-    m_optimal.clear();
+    m_optimal_track.reset();
 
     // Initialize plot ranges
     initRange(uniqueName);
@@ -891,17 +898,22 @@ void MainWindow::importFromCheckedTrack(const QString& uniqueName) {
     setTrackName(uniqueName);
 }
 
-void MainWindow::import(QIODevice* device, DataPoints& data, QString trackName, bool initDatabase) {
+flysight::Track MainWindow::import(QIODevice* device, QString trackName, bool initDatabase) {
     QTextStream in(device);
-    // TODO(akenny)
+    throw std::runtime_error("TODO(akenny)");
 }
 
-void MainWindow::setMark(double start, double end) {
-    if (m_data.isEmpty())
+void MainWindow::setMark(flysight::DataPoint::Time start, flysight::DataPoint::Time end) {
+    if (!m_track)
         return;
 
-    if (start >= m_data.front().t && start <= m_data.back().t && end >= m_data.front().t &&
-        end <= m_data.back().t) {
+    const auto& track_data = m_track->data();
+
+    if (track_data.empty())
+        return;
+
+    if (start >= track_data.front().t && start <= track_data.back().t &&
+        end >= track_data.front().t && end <= track_data.back().t) {
         mMarkStart = start;
         mMarkEnd = end;
         mMarkActive = true;
@@ -913,11 +925,16 @@ void MainWindow::setMark(double start, double end) {
     emit cursorChanged();
 }
 
-void MainWindow::setMark(double mark) {
-    if (m_data.isEmpty())
+void MainWindow::setMark(flysight::DataPoint::Time mark) {
+    if (!m_track)
         return;
 
-    if (mark >= m_data.front().t && mark <= m_data.back().t) {
+    const auto& track_data = m_track->data();
+
+    if (track_data.empty())
+        return;
+
+    if (mark >= track_data.front().t && mark <= track_data.back().t) {
         mMarkStart = mMarkEnd = mark;
         mMarkActive = true;
     }
