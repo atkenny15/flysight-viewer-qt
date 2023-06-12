@@ -37,8 +37,15 @@ void PerformanceScoring::setRange(double startTime, double endTime) {
 
 void PerformanceScoring::prepareDataPlot(DataPlot* plot) {
     // Return now if plot empty
-    if (mMainWindow->dataSize() == 0)
+    const auto& maybe_track = mMainWindow->get_track();
+    if (!maybe_track) {
         return;
+    }
+
+    const auto& track_data = maybe_track->data();
+    if (track_data.empty()) {
+        return;
+    }
 
     DataPoint dpStart = mMainWindow->interpolateDataT(mStartTime);
     DataPoint dpEnd = mMainWindow->interpolateDataT(mEndTime);

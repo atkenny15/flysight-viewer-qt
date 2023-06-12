@@ -80,6 +80,8 @@ public:
 
     PlotValue::Units units() const { return m_units; }
 
+    bool track_is_empty() const noexcept { return !m_track || m_track->data().empty(); }
+
     const std::optional<flysight::Track>& get_track() const noexcept { return m_track; }
     const std::optional<flysight::Track>& get_optimal_track() const noexcept {
         return m_optimal_track;

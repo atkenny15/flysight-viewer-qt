@@ -58,8 +58,9 @@ void PerformanceForm::setMainWindow(MainWindow* mainWindow) {
 
 void PerformanceForm::updateView() {
     // Return if plot empty
-    if (mMainWindow->dataSize() == 0)
+    if (mMainWindow->track_is_empty()) {
         return;
+    }
 
     PerformanceScoring* method =
         (PerformanceScoring*)mMainWindow->scoringMethod(MainWindow::Performance);

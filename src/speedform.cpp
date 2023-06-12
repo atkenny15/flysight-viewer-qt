@@ -31,8 +31,6 @@
 #include "speedscoring.h"
 #include "ui_speedform.h"
 
-#define METERS_TO_FEET 3.280839895
-
 SpeedForm::SpeedForm(QWidget* parent) : QWidget(parent), ui(new Ui::SpeedForm), mMainWindow(0) {
     ui->setupUi(this);
 

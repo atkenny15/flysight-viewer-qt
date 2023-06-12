@@ -63,8 +63,10 @@
 #include <QTextStream>
 #include <QThread>
 #include <math.h>
+#include <units/isq/si/time.h>
 
 using namespace GeographicLib;
+using namespace units::isq::si::time_references;
 
 MainWindow::MainWindow(QWidget* parent) :
 
@@ -558,7 +560,9 @@ void MainWindow::on_actionImport_triggered() {
     qSort(fileNames);
 
     // Import each file
-    foreach (QString fileName, fileNames) { importFile(fileName); }
+    foreach (QString fileName, fileNames) {
+        importFile(fileName);
+    }
 }
 
 void MainWindow::on_actionImportFolder_triggered() {
@@ -978,36 +982,37 @@ void MainWindow::initRange(QString trackName) {
     mZoomLevelUndo.clear();
     mZoomLevelRedo.clear();
 
-    QString strMin, strMax;
-    if (getDatabaseValue(trackName, "t_min", strMin) &&
-        getDatabaseValue(trackName, "t_max", strMax)) {
-        const DataPoint& dp0 = m_data[0];
-        mZoomLevel.rangeLower =
-            dp0.t + dp0.dateTime.msecsTo(QDateTime::fromString(strMin, Qt::ISODate)) / 1000.;
-        mZoomLevel.rangeUpper =
-            dp0.t + dp0.dateTime.msecsTo(QDateTime::fromString(strMax, Qt::ISODate)) / 1000.;
+    if (track_is_empty()) {
+        mZoomLevel.rangeLower = mZoomLevel.rangeUpper = 0 * s;
     }
-    else if (!m_data.isEmpty()) {
-        double lower, upper;
-        for (int i = 0; i < m_data.size(); ++i) {
-            const DataPoint& dp = m_data[i];
+    else {
+        const auto& track_data = m_track->data();
 
-            if (i == 0) {
-                lower = upper = dp.t;
-            }
-            else {
+        QString strMin, strMax;
+        if (getDatabaseValue(trackName, "t_min", strMin) &&
+            getDatabaseValue(trackName, "t_max", strMax)) {
+            /* TODO(akenny)
+            const auto& dp0 = track_data[0];
+            mZoomLevel.rangeLower =
+                dp0.t + dp0.dateTime.msecsTo(QDateTime::fromString(strMin, Qt::ISODate)) / 1000.;
+            mZoomLevel.rangeUpper =
+                dp0.t + dp0.dateTime.msecsTo(QDateTime::fromString(strMax, Qt::ISODate)) / 1000.;
+            */
+            mZoomLevel.rangeLower = mZoomLevel.rangeUpper = 0 * s;
+        }
+        else {
+            auto lower = track_data[0].t;
+            auto upper = track_data[0].t;
+            for (const auto& dp : track_data) {
                 if (dp.t < lower)
                     lower = dp.t;
                 if (dp.t > upper)
                     upper = dp.t;
             }
-        }
 
-        mZoomLevel.rangeLower = qMin(lower, upper);
-        mZoomLevel.rangeUpper = qMax(lower, upper);
-    }
-    else {
-        mZoomLevel.rangeLower = mZoomLevel.rangeUpper = 0;
+            mZoomLevel.rangeLower = qMin(lower, upper);
+            mZoomLevel.rangeUpper = qMax(lower, upper);
+        }
     }
 
     emit dataChanged();
@@ -1300,7 +1305,9 @@ void MainWindow::on_actionPreferences_triggered() {
             initAerodynamics(m_data);
 
             // Update checked tracks
-            foreach (DataPoints data, mCheckedTracks) { initAerodynamics(data); }
+            foreach (DataPoints data, mCheckedTracks) {
+                initAerodynamics(data);
+            }
 
             emit dataChanged();
         }
