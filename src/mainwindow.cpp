@@ -982,36 +982,37 @@ void MainWindow::initRange(QString trackName) {
     mZoomLevelUndo.clear();
     mZoomLevelRedo.clear();
 
-    if (track_is_empty()) {
-        mZoomLevel.rangeLower = mZoomLevel.rangeUpper = 0 * s;
-    }
-    else {
+    mZoomLevel.rangeLower = mZoomLevel.rangeUpper = 0 * s;
+    if (!track_is_empty()) {
         const auto& track_data = m_track->data();
 
         QString strMin, strMax;
+        // TODO(akenny)
+        /*
         if (getDatabaseValue(trackName, "t_min", strMin) &&
             getDatabaseValue(trackName, "t_max", strMax)) {
-            /* TODO(akenny)
             const auto& dp0 = track_data[0];
             mZoomLevel.rangeLower =
                 dp0.t + dp0.dateTime.msecsTo(QDateTime::fromString(strMin, Qt::ISODate)) / 1000.;
             mZoomLevel.rangeUpper =
                 dp0.t + dp0.dateTime.msecsTo(QDateTime::fromString(strMax, Qt::ISODate)) / 1000.;
-            */
             mZoomLevel.rangeLower = mZoomLevel.rangeUpper = 0 * s;
         }
         else {
-            auto lower = track_data[0].t;
-            auto upper = track_data[0].t;
-            for (const auto& dp : track_data) {
-                if (dp.t < lower)
-                    lower = dp.t;
-                if (dp.t > upper)
-                    upper = dp.t;
-            }
+        */
 
-            mZoomLevel.rangeLower = qMin(lower, upper);
-            mZoomLevel.rangeUpper = qMax(lower, upper);
+        const auto min_it =
+            std::min_element(track_data.cbegin(), track_data.cend(),
+                             [](const auto& a, const auto& b) { return a.t < b.t; });
+        if (min_it != track_data.cend()) {
+            mZoomLevel.rangeLower = min_it->t;
+        }
+
+        const auto max_it =
+            std::max_element(track_data.cbegin(), track_data.cend(),
+                             [](const auto& a, const auto& b) { return a.t < b.t; });
+        if (max_it != track_data.cend()) {
+            mZoomLevel.rangeUpper = max_it->t;
         }
     }
 
@@ -1022,7 +1023,7 @@ void MainWindow::initRange(QString trackName) {
     m_ui->actionRedoZoom->setEnabled(false);
 
     // Enable zoom to extent
-    m_ui->actionZoomToExtent->setEnabled(!m_data.isEmpty());
+    m_ui->actionZoomToExtent->setEnabled(!track_is_empty());
 }
 
 void MainWindow::on_actionElevation_triggered() {
@@ -1195,15 +1196,6 @@ void MainWindow::on_actionWind_triggered() {
     mWindAdjustment = !mWindAdjustment;
     m_ui->actionWind->setChecked(mWindAdjustment);
 
-    // Update plot data
-    updateVelocity(m_data, mTrackName, false);
-
-    // Update checked tracks
-    QMap<QString, DataPoints>::iterator p;
-    for (p = mCheckedTracks.begin(); p != mCheckedTracks.end(); ++p) {
-        updateVelocity(p.value(), p.key(), false);
-    }
-
     emit dataChanged();
 }
 
@@ -1298,14 +1290,14 @@ void MainWindow::on_actionPreferences_triggered() {
         }
 
         if (m_mass != dlg.mass() || m_planformArea != dlg.planformArea()) {
-            m_mass = dlg.mass();
-            m_planformArea = dlg.planformArea();
+            m_track.set_mass(dlg.mass());
+            m_track.set_planform_area(dlg.planformArea());
 
-            // Update plot data
-            initAerodynamics(m_data);
-
+            // TODO(akenny)
             // Update checked tracks
-            foreach (DataPoints data, mCheckedTracks) {
+            foreach (flysight::Track track, mCheckedTracks) {
+                track.set_mass(dlg.mass());
+                track.set_planform_area(dlg.planformArea());
                 initAerodynamics(data);
             }
 
