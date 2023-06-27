@@ -26,12 +26,11 @@
 #include "acroscoring.h"
 #include "common.h"
 #include "datapoint.h"
+#include "flysight/convert.hh"
 #include "mainwindow.h"
 #include "plotvalue.h"
 #include "ui_acroform.h"
-
-using namespace units::isq::si::references;
-using namespace units::isq::si::fps::length_references;
+#include "units/isq/si/fps/length.h"
 
 AcroForm::AcroForm(QWidget* parent) : QWidget(parent), ui(new Ui::AcroForm), mMainWindow(0) {
     ui->setupUi(this);
@@ -56,10 +55,10 @@ void AcroForm::setMainWindow(MainWindow* mainWindow) {
 }
 
 void AcroForm::updateView() {
-    const auto& maybe_track = mMainWindow->track();
-    if (maybe_track)
+    if (mMainWindow->track_is_empty()) {
         return;
-    const auto& track = *maybe_track;
+    }
+    const auto& track = *mMainWindow->get_track();
 
     AcroScoring* method = (AcroScoring*)mMainWindow->scoringMethod(MainWindow::Acro);
 
@@ -92,12 +91,19 @@ void AcroForm::updateView() {
 }
 
 void AcroForm::onFAIButtonClicked() {
+    using units::isq::si::length_references::m;
+    using units::isq::si::time_references::s;
+
     AcroScoring* method = (AcroScoring*)mMainWindow->scoringMethod(MainWindow::Acro);
     method->setSpeed(8 * (m / s));
     method->setAltitude(2286 * m);
 }
 
 void AcroForm::onApplyButtonClicked() {
+    using units::isq::si::fps::length_references::ft;
+    using units::isq::si::length_references::m;
+    using units::isq::si::time_references::s;
+
     const auto speed = ui->speedEdit->text().toDouble() * (m / s);
     const auto altitude = ui->altitudeEdit->text().toDouble() * ft;
 

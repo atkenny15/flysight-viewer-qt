@@ -29,6 +29,7 @@
 #include "configdialog.h"
 #include "dataview.h"
 #include "flarescoring.h"
+#include "flysight/convert.hh"
 #include "importworker.h"
 #include "liftdragplot.h"
 #include "logbookview.h"
@@ -888,18 +889,20 @@ bool MainWindow::trackChecked(const QString& trackName) const {
 
 void MainWindow::importFromCheckedTrack(const QString& uniqueName) {
     // Copy track data
-    m_track = mCheckedTracks[uniqueName];
+    if (const auto it = mCheckedTracks.constFind(uniqueName); it != mCheckedTracks.constEnd()) {
+        m_track = *it;
 
-    // Clear optimum
-    m_optimal_track.reset();
+        // Clear optimum
+        m_optimal_track.reset();
 
-    // Initialize plot ranges
-    initRange(uniqueName);
+        // Initialize plot ranges
+        initRange(uniqueName);
 
-    emit dataLoaded();
+        emit dataLoaded();
 
-    // Remember current track
-    setTrackName(uniqueName);
+        // Remember current track
+        setTrackName(uniqueName);
+    }
 }
 
 flysight::Track MainWindow::import(QIODevice* device, QString trackName, bool initDatabase) {
@@ -1289,19 +1292,26 @@ void MainWindow::on_actionPreferences_triggered() {
             emit dataChanged();
         }
 
-        if (m_mass != dlg.mass() || m_planformArea != dlg.planformArea()) {
-            m_track.set_mass(dlg.mass());
-            m_track.set_planform_area(dlg.planformArea());
+        if (m_track) {
+            const double mass = flysight::convert::get_mass_kg(m_track->get_jumper_mass());
+            const double planform_area =
+                flysight::convert::get_area_m2(m_track->get_planform_area());
+            if (mass != dlg.mass() || planform_area != dlg.planformArea()) {
+                using units::isq::si::area_references::m2;
+                using units::isq::si::mass_references::kg;
 
-            // TODO(akenny)
-            // Update checked tracks
-            foreach (flysight::Track track, mCheckedTracks) {
-                track.set_mass(dlg.mass());
-                track.set_planform_area(dlg.planformArea());
-                initAerodynamics(data);
+                m_track->set_jumper_mass(dlg.mass() * kg);
+                m_track->set_planform_area(dlg.planformArea() * m2);
+
+                // TODO(akenny)
+                // Update checked tracks
+                for (flysight::Track& track : mCheckedTracks.values()) {
+                    track.set_jumper_mass(dlg.mass() * kg);
+                    track.set_planform_area(dlg.planformArea() * m2);
+                }
+
+                emit dataChanged();
             }
-
-            emit dataChanged();
         }
 
         if (m_minDrag != dlg.minDrag() || m_minLift != dlg.minLift() ||
@@ -1485,6 +1495,10 @@ void MainWindow::on_actionExportToGoogleEarth_triggered() {
 }
 
 bool MainWindow::exportToKML(QIODevice* device, QString name) {
+    if (track_is_empty()) {
+        return false;
+    }
+
     QTextStream stream(device);
 
     // Write headers
@@ -1496,13 +1510,11 @@ bool MainWindow::exportToKML(QIODevice* device, QString name) {
     stream << "      <altitudeMode>absolute</altitudeMode>" << endl;
     stream << "      <coordinates>" << endl;
 
-    double lower = rangeLower();
-    double upper = rangeUpper();
+    const auto lower = rangeLower();
+    const auto upper = rangeUpper();
 
     bool first = true;
-    for (int i = 0; i < dataSize(); ++i) {
-        const DataPoint& dp = dataPoint(i);
-
+    for (const auto& dp : m_track->data()) {
         if (lower <= dp.t && dp.t <= upper) {
             if (first) {
                 stream << "        ";
@@ -1513,9 +1525,9 @@ bool MainWindow::exportToKML(QIODevice* device, QString name) {
             }
 
             stream << QString("%1,%2,%3")
-                          .arg(dp.lon, 0, 'f', 7)
-                          .arg(dp.lat, 0, 'f', 7)
-                          .arg(dp.hMSL, 0, 'f', 3);
+                          .arg(flysight::convert::get_angle_deg(dp.longitude), 0, 'f', 7)
+                          .arg(flysight::convert::get_angle_deg(dp.latitude), 0, 'f', 7)
+                          .arg(flysight::convert::get_length_m(dp.height_msl), 0, 'f', 3);
         }
     }
 
@@ -1542,7 +1554,7 @@ void MainWindow::on_actionExportPlot_triggered() {
     QString fileName =
         QFileDialog::getSaveFileName(this, tr("Export Plot"), rootFolder, tr("CSV Files (*.csv)"));
 
-    if (!fileName.isEmpty()) {
+    if (!fileName.isEmpty() && m_track) {
         // Remember last file read
         settings.setValue("plotFolder", QFileInfo(fileName).absoluteFilePath());
 
@@ -1565,14 +1577,12 @@ void MainWindow::on_actionExportPlot_triggered() {
         }
         stream << endl;
 
-        double lower = rangeLower();
-        double upper = rangeUpper();
+        const auto lower = rangeLower();
+        const auto upper = rangeUpper();
 
-        for (int i = 0; i < dataSize(); ++i) {
-            const DataPoint& dp = dataPoint(i);
-
+        for (const auto& dp : m_track->data()) {
             if (lower <= dp.t && dp.t <= upper) {
-                stream << dateTimeToUTC(dp.dateTime);
+                stream << QString::fromStdString(dp.utc_str());
                 stream << "," << m_ui->plotArea->xValue()->value(dp, m_units);
                 for (int j = 0; j < DataPlot::yaLast; ++j) {
                     if (!m_ui->plotArea->yValue(j)->visible())
@@ -1596,7 +1606,7 @@ void MainWindow::on_actionExportTrack_triggered() {
     QString fileName =
         QFileDialog::getSaveFileName(this, tr("Export Track"), rootFolder, tr("CSV Files (*.csv)"));
 
-    if (!fileName.isEmpty()) {
+    if (!fileName.isEmpty() && m_track) {
         // Remember last file read
         settings.setValue("trackFolder", QFileInfo(fileName).absoluteFilePath());
 
@@ -1614,40 +1624,42 @@ void MainWindow::on_actionExportTrack_triggered() {
                << endl;
         stream << ",(deg),(deg),(m),(m/s),(m/s),(m/s),(m),(m),(m/s),(deg),(deg),," << endl;
 
-        double lower = rangeLower();
-        double upper = rangeUpper();
+        const auto lower = rangeLower();
+        const auto upper = rangeUpper();
 
-        for (int i = 0; i < dataSize(); ++i) {
-            const DataPoint& dp = dataPoint(i);
+        using flysight::convert::get_angle_deg;
+        using flysight::convert::get_length_m;
+        using flysight::convert::get_speed_mps;
 
+        for (const auto& dp : m_track->data()) {
             if (lower <= dp.t && dp.t <= upper) {
-                stream << dateTimeToUTC(dp.dateTime) << ",";
+                stream << QString::fromStdString(dp.utc_str());
 
-                stream << QString::number(dp.lat, 'f', 7) << ",";
-                stream << QString::number(dp.lon, 'f', 7) << ",";
-                stream << QString::number(dp.hMSL, 'f', 3) << ",";
+                stream << QString::number(get_angle_deg(dp.latitude), 'f', 7) << ",";
+                stream << QString::number(get_angle_deg(dp.longitude), 'f', 7) << ",";
+                stream << QString::number(get_length_m(dp.height_msl), 'f', 3) << ",";
 
-                stream << QString::number(dp.velN, 'f', 2) << ",";
-                stream << QString::number(dp.velE, 'f', 2) << ",";
-                stream << QString::number(dp.velD, 'f', 2) << ",";
+                stream << QString::number(get_speed_mps(dp.velocity_north), 'f', 2) << ",";
+                stream << QString::number(get_speed_mps(dp.velocity_east), 'f', 2) << ",";
+                stream << QString::number(get_speed_mps(dp.velocity_down), 'f', 2) << ",";
 
-                stream << QString::number(dp.hAcc, 'f', 3) << ",";
-                stream << QString::number(dp.vAcc, 'f', 3) << ",";
-                stream << QString::number(dp.sAcc, 'f', 2) << ",";
+                stream << QString::number(get_length_m(dp.horizontal_accuracy), 'f', 3) << ",";
+                stream << QString::number(get_length_m(dp.vertical_accuracy), 'f', 3) << ",";
+                stream << QString::number(get_speed_mps(dp.speed_accuracy), 'f', 2) << ",";
 
                 // Get adjusted heading
-                double heading = dp.heading;
+                double heading = get_angle_deg(dp.heading);
                 while (heading < 0)
                     heading += 360;
                 while (heading >= 360)
                     heading -= 360;
 
                 stream << QString::number(heading, 'f', 5) << ",";
-                stream << QString::number(dp.cAcc, 'f', 5) << ",";
+                stream << QString::number(get_angle_deg(dp.c_accuracy), 'f', 5) << ",";
 
                 stream << ","; // gpsFix
 
-                stream << QString::number(dp.numSV) << endl;
+                stream << QString::number(dp.num_satellites) << endl;
             }
         }
     }
@@ -1661,7 +1673,8 @@ QString MainWindow::dateTimeToUTC(const QDateTime& dt) {
     return ret;
 }
 
-void MainWindow::setRange(double lower, double upper, bool immediate) {
+void MainWindow::setRange(flysight::DataPoint::Time lower, flysight::DataPoint::Time upper,
+                          bool immediate) {
     if (!zoomTimer->isActive()) {
         mZoomLevelPrev = mZoomLevel;
     }
@@ -1673,8 +1686,14 @@ void MainWindow::setRange(double lower, double upper, bool immediate) {
         zoomTimer->start(1000);
     }
 
-    mZoomLevel.rangeLower = qMin(lower, upper);
-    mZoomLevel.rangeUpper = qMax(lower, upper);
+    if (upper < lower) {
+        const auto temp = upper;
+        upper = lower;
+        lower = temp;
+    }
+
+    mZoomLevel.rangeLower = lower;
+    mZoomLevel.rangeUpper = upper;
 
     emit rangeChanged();
 }
@@ -1698,22 +1717,12 @@ void MainWindow::setRotation(double rotation) {
 }
 
 void MainWindow::setZero(double t) {
-    if (m_data.isEmpty())
+    if (track_is_empty()) {
         return;
-
-    DataPoint dp0 = interpolateDataT(t);
-    setDatabaseValue(mTrackName, "exit", dateTimeToUTC(dp0.dateTime));
-
-    for (int i = 0; i < m_data.size(); ++i) {
-        DataPoint& dp = m_data[i];
-
-        dp.t -= dp0.t;
-        dp.x -= dp0.x;
-        dp.y -= dp0.y;
-
-        dp.dist2D -= dp0.dist2D;
-        dp.dist3D -= dp0.dist3D;
     }
+
+    const auto dp0 = m_track->interpolate_t(t * units::isq::si::time_references::s);
+    m_track->set_exit(dp0.time);
 
     mMarkStart -= dp0.t;
     mMarkEnd -= dp0.t;
@@ -1737,81 +1746,42 @@ void MainWindow::setZero(double t) {
 }
 
 void MainWindow::setGround(double t) {
-    if (m_data.isEmpty())
+    if (track_is_empty()) {
         return;
+    }
 
-    DataPoint dp0 = interpolateDataT(t);
-    setTrackGround(mTrackName, dp0.hMSL);
+    const flysight::DataPoint dp0 = m_track->interpolate_t(t * s);
+    setTrackGround(mTrackName, dp0.height_msl);
 
     setTool(mPrevTool);
 }
 
-void MainWindow::setTrackGround(QString trackName, double ground) {
-    setDatabaseValue(trackName, "ground", QString::number(ground, 'f', 3));
+template<typename K, typename V>
+class QMapKVIterator {
+public:
+    QMapKVIterator(QMap<K, V>& map) : map_(map) {}
+
+    auto begin() { return map_.keyValueBegin(); }
+    auto end() { return map_.keyValueEnd(); }
+
+private:
+    QMap<K, V>& map_;
+};
+
+void MainWindow::setTrackGround(const QString trackName, const flysight::DataPoint::Length ground) {
+    setDatabaseValue(trackName, "ground",
+                     QString::number(flysight::convert::get_length_m(ground), 'f', 3));
 
     // Update current track
     if (trackName == mTrackName) {
-        updateGround(m_data, ground);
+        m_track->set_ground(ground);
         emit dataChanged();
     }
 
     // Update checked tracks
-    QMap<QString, DataPoints>::iterator p;
-    for (p = mCheckedTracks.begin(); p != mCheckedTracks.end(); ++p) {
-        if (trackName == p.key()) {
-            updateGround(p.value(), ground);
-        }
-    }
-}
-
-void MainWindow::setTrackWindSpeed(QString trackName, double windSpeed) {
-    double windSpeedOld, windDir;
-    getWindSpeedDirection(trackName, &windSpeedOld, &windDir);
-
-    double windE, windN;
-    windE = -windSpeed * sin(windDir / 180 * PI);
-    windN = -windSpeed * cos(windDir / 180 * PI);
-
-    setDatabaseValue(trackName, "wind_e", QString::number(windE, 'f', 2));
-    setDatabaseValue(trackName, "wind_n", QString::number(windN, 'f', 2));
-
-    // Update current track
-    if (trackName == mTrackName) {
-        updateVelocity(m_data, mTrackName, false);
-        emit dataChanged();
-    }
-
-    // Update checked tracks
-    QMap<QString, DataPoints>::iterator p;
-    for (p = mCheckedTracks.begin(); p != mCheckedTracks.end(); ++p) {
-        if (trackName == p.key()) {
-            updateVelocity(p.value(), p.key(), false);
-        }
-    }
-}
-
-void MainWindow::setTrackWindDir(QString trackName, double windDir) {
-    double windSpeed, windDirOld;
-    getWindSpeedDirection(trackName, &windSpeed, &windDirOld);
-
-    double windE, windN;
-    windE = -windSpeed * sin(windDir / 180 * PI);
-    windN = -windSpeed * cos(windDir / 180 * PI);
-
-    setDatabaseValue(trackName, "wind_e", QString::number(windE, 'f', 2));
-    setDatabaseValue(trackName, "wind_n", QString::number(windN, 'f', 2));
-
-    // Update current track
-    if (trackName == mTrackName) {
-        updateVelocity(m_data, mTrackName, false);
-        emit dataChanged();
-    }
-
-    // Update checked tracks
-    QMap<QString, DataPoints>::iterator p;
-    for (p = mCheckedTracks.begin(); p != mCheckedTracks.end(); ++p) {
-        if (trackName == p.key()) {
-            updateVelocity(p.value(), p.key(), false);
+    for (const auto& [name, track] : QMapKVIterator(mCheckedTracks)) {
+        if (trackName == name) {
+            track.set_ground(ground);
         }
     }
 }
@@ -1821,23 +1791,6 @@ void MainWindow::updateGround(DataPoints& data, double ground) {
         DataPoint& dp = data[i];
         dp.z = dp.hMSL - ground;
     }
-}
-
-void MainWindow::setCourse(double t) {
-    if (m_data.isEmpty())
-        return;
-
-    DataPoint dp0 = interpolateDataT(t);
-    setDatabaseValue(mTrackName, "course", QString::number(dp0.heading, 'f', 5));
-
-    for (int i = 0; i < m_data.size(); ++i) {
-        DataPoint& dp = m_data[i];
-        dp.theta -= dp0.theta;
-    }
-
-    emit dataChanged();
-
-    setTool(mPrevTool);
 }
 
 bool MainWindow::setDatabaseValue(QString trackName, QString column, QString value) {
@@ -1946,22 +1899,6 @@ void MainWindow::setLineThickness(double width) {
     emit dataChanged();
 }
 
-void MainWindow::setWind(double windE, double windN) {
-    setDatabaseValue(mTrackName, "wind_e", QString::number(windE, 'f', 2));
-    setDatabaseValue(mTrackName, "wind_n", QString::number(windN, 'f', 2));
-
-    // Update plot data
-    updateVelocity(m_data, mTrackName, false);
-
-    // Update checked tracks
-    QMap<QString, DataPoints>::iterator p;
-    for (p = mCheckedTracks.begin(); p != mCheckedTracks.end(); ++p) {
-        updateVelocity(p.value(), p.key(), false);
-    }
-
-    emit dataChanged();
-}
-
 void MainWindow::getWind(QString trackName, double* windE, double* windN) {
     QString strE, strN;
     if (getDatabaseValue(trackName, "wind_e", strE) &&
@@ -2015,28 +1952,31 @@ void MainWindow::on_actionRedoZoom_triggered() {
 }
 
 void MainWindow::saveZoomToDatabase() {
-    DataPoint dp = interpolateDataT(mZoomLevel.rangeLower);
-    setDatabaseValue(mTrackName, "t_min", dateTimeToUTC(dp.dateTime));
-    dp = interpolateDataT(mZoomLevel.rangeUpper);
-    setDatabaseValue(mTrackName, "t_max", dateTimeToUTC(dp.dateTime));
+    if (track_is_empty()) {
+        return;
+    }
+
+    flysight::DataPoint dp = m_track->interpolate_t(mZoomLevel.rangeLower);
+    setDatabaseValue(mTrackName, "t_min", QString::fromStdString(dp.utc_str()));
+    dp = m_track->interpolate_t(mZoomLevel.rangeUpper);
+    setDatabaseValue(mTrackName, "t_max", QString::fromStdString(dp.utc_str()));
 
     emit databaseChanged();
 }
 
 void MainWindow::on_actionZoomToExtent_triggered() {
-    double lower, upper;
-    for (int i = 0; i < m_data.size(); ++i) {
-        const DataPoint& dp = m_data[i];
+    if (track_is_empty()) {
+        return;
+    }
 
-        if (i == 0) {
-            lower = upper = dp.t;
-        }
-        else {
-            if (dp.t < lower)
-                lower = dp.t;
-            if (dp.t > upper)
-                upper = dp.t;
-        }
+    const auto& data = m_track->data();
+    auto lower = data[0].t;
+    auto upper = data[0].t;
+    for (const auto& dp : data) {
+        if (dp.t < lower)
+            lower = dp.t;
+        if (dp.t > upper)
+            upper = dp.t;
     }
 
     setRange(lower, upper, true);
@@ -2050,7 +1990,7 @@ void MainWindow::on_actionDeleteTrack_triggered() {
     foreach (QString uniqueName, mSelectedTracks) {
         if (uniqueName == mTrackName) {
             // Clear track data
-            m_data.clear();
+            m_track.reset();
             emit dataChanged();
 
             // Clear current track name;
@@ -2129,10 +2069,12 @@ bool MainWindow::updateReference(double lat, double lon) {
     }
 }
 
-void MainWindow::setOptimal(const DataPoints& result) {
-    m_optimal = result;
+/*
+void MainWindow::setOptimal(flysight::Track result) {
+    m_optimal = std::move(result);
     emit dataChanged();
 }
+*/
 
 void MainWindow::setMapMode(MapMode newMapMode) {
     if (mMapMode != newMapMode) {

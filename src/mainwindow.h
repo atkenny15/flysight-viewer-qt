@@ -87,17 +87,14 @@ public:
         return m_optimal_track;
     }
 
-    void setRange(double lower, double upper, bool immediate = false);
+    void setRange(flysight::DataPoint::Time lower, flysight::DataPoint::Time upper, bool immediate);
     auto rangeLower() const { return mZoomLevel.rangeLower; }
     auto rangeUpper() const { return mZoomLevel.rangeUpper; }
 
     void setZero(double t);
     void setGround(double t);
-    void setCourse(double t);
 
-    void setTrackGround(QString trackName, double ground);
-    void setTrackWindSpeed(QString trackName, double windSpeed);
-    void setTrackWindDir(QString trackName, double windDIr);
+    void setTrackGround(QString trackName, flysight::DataPoint::Length ground);
 
     void setTool(Tool tool);
     Tool tool() const { return mTool; }
@@ -187,8 +184,6 @@ public:
 
     void setMapMode(MapMode newMapMode);
     MapMode mapMode() const { return mMapMode; }
-
-    const std::optional<flysight::Track>& track() const noexcept { return m_track; }
 
 protected:
     void hideEvent(QHideEvent* event);

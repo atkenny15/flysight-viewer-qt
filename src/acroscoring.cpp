@@ -42,11 +42,10 @@ void AcroScoring::setAltitude(flysight::DataPoint::Length altitude) {
 }
 
 void AcroScoring::prepareDataPlot(DataPlot* plot) {
-    // Return now if plot empty
-    const auto& maybe_track = mMainWindow->track();
-    if (!maybe_track || maybe_track->data().empty())
+    if (mMainWindow->track_is_empty()) {
         return;
-    const auto& track = *maybe_track;
+    }
+    const auto& track = *mMainWindow->get_track();
 
     flysight::DataPoint dpBottom, dpTop;
     bool success = false;
